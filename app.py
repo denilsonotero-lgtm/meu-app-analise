@@ -1,59 +1,76 @@
-import requests
-from flask import Flask, jsonify
+import os
+import json
+from flask import Flask, request, jsonify
 from flask_cors import CORS
+from websocket import create_connection
 
 app = Flask(__name__)
-CORS(app)  # Libera o acesso para o seu aplicativo no celular
+CORS(app)
 
-def calcular_analise_binance(simbolo):
-    # Conecta direto na API pública e gratuita da Binance
-    url = f"https://api.binance.com/api/v3/klines?symbol={simbolo}&interval=1h&limit=20"
-    resposta = requests.get(url)
+XTB_USER = os.getenv("XTB_USER")
+XTB_PASS = os.getenv("XTB_PASS")
+
+@app.route('/api/xtb', methods=['GET'])
+def get_xtb_data():
+    symbol = request.args.get('symbol', 'EURUSD').upper()
     
-    if resposta.status_code != 200:
-        return None
+    if not XTB_USER or not XTB_PASS:
+        return jsonify({"erro": "Credenciais XTB não configuradas no Render"}), 500
 
-    dados = resposta.json()
-    # Extrai os preços de fechamento das últimas 20 velas
-    fechamentos = [float(vela[4]) for vela in dados]
-    
-    preco_atual = fechamentos[-1]
-    media_movel = sum(fechamentos) / len(fechamentos)
-    
-    # Lógica de tendência: Preço acima da média = COMPRA, abaixo = VENDA
-    if preco_atual > media_movel:
-        direcao = "COMPRA"
-        diferenca = ((preco_atual - media_movel) / media_movel) * 100
-        score = min(95, int(70 + (diferenca * 10)))
-    else:
-        direcao = "VENDA"
-        diferenca = ((media_movel - preco_atual) / media_movel) * 100
-        score = min(95, int(70 + (diferenca * 10)))
+    try:
+        # Conecta ao WebSocket da XTB (Demo)
+        ws = create_connection("wss://ws.xtb.com/demo")
+        
+        # Envia comando de Login
+        login_cmd = {
+            "command": "login",
+            "arguments": {"userId": XTB_USER, "password": XTB_PASS}
+        }
+        ws.send(json.dumps(login_cmd))
+        res_login = json.loads(ws.recv())
 
-    probabilidade = min(88, score - 3)
+        if not res_login.get("status"):
+            ws.close()
+            return jsonify({"erro": "Falha de autenticação na XTB"}), 400
 
-    return {
-        "ativo": simbolo.replace("USDT", "/USDT"),
-        "score": score,
-        "direcao": direcao,
-        "probabilidade": probabilidade,
-        "preco_atual": preco_atual,
-        "casos_analisados": 2400
-    }
+        # Solicita os últimos dados do gráfico
+        chart_cmd = {
+            "command": "getChartLastRequest",
+            "arguments": {
+                "info": {
+                    "period": 60,
+                    "start": 0,
+                    "symbol": symbol
+                }
+            }
+        }
+        ws.send(json.dumps(chart_cmd))
+        res_chart = json.loads(ws.recv())
+        ws.close()
 
-@app.route('/api/sinal/<ativo>', methods=['GET'])
-def obter_sinal(ativo):
-    # Formata o ativo para o padrão Binance (ex: BTC -> BTCUSDT)
-    simbolo = ativo.upper().replace("/", "").replace("-", "")
-    if not simbolo.endswith("USDT"):
-        simbolo += "USDT"
+        # Processa os dados recebidos
+        rate_infos = res_chart.get("returnData", {}).get("rateInfos", [])
+        if not rate_infos:
+            return jsonify({"erro": "Ativo não encontrado"}), 404
 
-    resultado = calcular_analise_binance(simbolo)
-    
-    if resultado:
-        return jsonify(resultado)
-    else:
-        return jsonify({"erro": "Ativo não encontrado"}), 404
+        fechamentos = [v["open"] for v in rate_infos]
+        preco_atual = fechamentos[-1]
+        media = sum(fechamentos) / len(fechamentos)
+        
+        sinal = "COMPRA" if preco_atual >= media else "VENDA"
+        diff = abs((preco_atual - media) / media) * 100
+        score = min(98, max(70, int(70 + (diff * 15))))
+
+        return jsonify({
+            "sinal": sinal,
+            "score": score,
+            "probabilidade": score - 2,
+            "casos": len(fechamentos)
+        })
+
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
