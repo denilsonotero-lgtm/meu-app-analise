@@ -37,7 +37,7 @@
 
     <div class="card">
       <div class="card-header">
-        <span id="displayAsset" style="font-weight: bold;">EURUSD • XTB</span>
+        <span id="displayAsset" style="font-weight: bold;">EURUSD • FOREX</span>
         <span class="score" id="displayScore">--/100</span>
       </div>
       <div class="signal-type" id="displaySignal">AGUARDANDO...</div>
@@ -55,23 +55,28 @@
       document.getElementById('displaySignal').style.color = '#ffffff';
 
       try {
-        const response = await fetch(`https://meu-app-analise.onrender.com/api/xtb?symbol=${ativo}`);
+        // URL oficial do seu serviço
+        const response = await fetch(`https://meu-app-analise.onrender.com/api/analise?symbol=${ativo}`);
         
         if (!response.ok) {
-          throw new Error('Servidor indisponível');
+          throw new Error('Erro ao buscar dados');
         }
 
         const data = await response.json();
 
-        document.getElementById('displayAsset').innerText = `${ativo} • XTB`;
+        document.getElementById('displayAsset').innerText = `${data.ativo} • ${data.fonte}`;
         document.getElementById('displayScore').innerText = `${data.score}/100`;
         document.getElementById('displaySignal').innerText = data.sinal;
         document.getElementById('displaySignal').style.color = (data.sinal === 'COMPRA') ? '#10b981' : '#ef4444';
         document.getElementById('displayProb').innerText = `Probabilidade: ${data.probabilidade}%`;
         document.getElementById('displayCases').innerText = `Velas: ${data.casos}`;
       } catch (err) {
+        document.getElementById('displayAsset').innerText = `${ativo} • N/A`;
+        document.getElementById('displayScore').innerText = `--/100`;
         document.getElementById('displaySignal').innerText = 'ERRO DE CONEXÃO';
         document.getElementById('displaySignal').style.color = '#ef4444';
+        document.getElementById('displayProb').innerText = 'Probabilidade: --%';
+        document.getElementById('displayCases').innerText = 'Casos: 0';
       }
     }
   </script>
