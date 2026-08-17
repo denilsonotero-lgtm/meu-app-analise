@@ -10,22 +10,33 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
+def extrair_dados_tf(ticker_symbol, interval):
+    try:
+        data = yf.download(tickers=ticker_symbol, period="5d", interval=interval, progress=False)
+        if data.empty or len(data) < 15:
+            return None
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = data.columns.get_level_values(0)
+            
+        df_close = data['Close']
+        rsi = ta.rsi(df_close, length=14).iloc[-1]
+        ema_9 = ta.ema(df_close, length=9).iloc[-1]
+        preco = df_close.iloc[-1]
+        
+        tendencia = "ALTA" if preco > ema_9 else "BAIXA"
+        return {
+            "preco": float(preco),
+            "rsi": round(float(rsi), 2),
+            "tendencia": tendencia
+        }
+    except Exception:
+        return None
+
 @app.route('/api/analise', methods=['GET'])
 def analisar():
     symbol = request.args.get('symbol', 'EURUSD').upper().replace('/', '')
-    timeframe = request.args.get('timeframe', '1h').lower()
+    tf_usuario = request.args.get('timeframe', '1h').lower()
     
-    # Mapeamento de timeframes para a API
-    tf_map = {
-        '5m': '5m',
-        '15m': '15m',
-        '1h': '60m',
-        '4h': '1h',
-        '1d': '1d'
-    }
-    intervalo = tf_map.get(timeframe, '60m')
-    
-    # Ajuste de símbolo para Forex/Cripto
     ticker_symbol = symbol
     if not symbol.endswith('=X') and not symbol.endswith('-USD'):
         if 'USD' in symbol and len(symbol) == 6:
@@ -33,72 +44,62 @@ def analisar():
         elif 'BTC' in symbol or 'ETH' in symbol:
             ticker_symbol = f"{symbol[:3]}-USD"
 
-    try:
-        # Busca histórico do mercado
-        data = yf.download(tickers=ticker_symbol, period="5d", interval=intervalo, progress=False)
-        
-        if data.empty or len(data) < 15:
-            return jsonify({"erro": "Ativo não encontrado ou dados insuficientes"}), 404
+    # Mapeamento para o Yahoo Finance
+    mapa_tf = {'5m': '5m', '15m': '15m', '1h': '60m', '4h': '1h', '1d': '1d'}
+    
+    # 1. Análise do Timeframe selecionado
+    dados_principal = extrair_dados_tf(ticker_symbol, mapa_tf.get(tf_usuario, '60m'))
+    if not dados_principal:
+        return jsonify({"erro": "Ativo não encontrado ou dados indisponíveis"}), 404
 
-        # Tratamento de colunas do DataFrame
-        if isinstance(data.columns, pd.MultiIndex):
-            data.columns = data.columns.get_level_values(0)
-
-        # Cálculo de Indicadores
-        df_close = data['Close']
-        rsi_series = ta.rsi(df_close, length=14)
-        ema_series = ta.ema(df_close, length=9)
-
-        if rsi_series is None or ema_series is None or rsi_series.empty or ema_series.empty:
-            return jsonify({"erro": "Falha no cálculo dos indicadores"}), 500
-
-        rsi = float(rsi_series.iloc[-1])
-        ema_9 = float(ema_series.iloc[-1])
-        preco_atual = float(df_close.iloc[-1])
-
-        # Lógica do Score e Sinal
-        score = 50
-        sinal = "OBSERVAR"
-
-        if preco_atual > ema_9:
-            score += 20
+    # 2. Comparativo Multitimeframe para o Raio-X
+    tf_comparativo = {}
+    for tf_key, tf_val in [('5m', '5m'), ('15m', '15m'), ('1h', '60m'), ('1d', '1d')]:
+        info = extrair_dados_tf(ticker_symbol, tf_val)
+        if info:
+            tf_comparativo[tf_key] = f"{info['tendencia']} (RSI: {info['rsi']})"
         else:
-            score -= 20
+            tf_comparativo[tf_key] = "N/A"
 
-        if rsi < 30:
-            score += 25
-            sinal = "COMPRA"
-        elif rsi > 70:
-            score -= 25
-            sinal = "VENDA"
-        else:
-            if score >= 65:
-                sinal = "COMPRA"
-            elif score <= 35:
-                sinal = "VENDA"
+    rsi = dados_principal['rsi']
+    preco = dados_principal['preco']
+    
+    # Cálculo de pontuação e sinal
+    score = 50
+    if dados_principal['tendencia'] == "ALTA": score += 20
+    else: score -= 20
 
-        score_final = min(99, max(10, int(score)))
+    if rsi < 35:
+        score += 25
+        sinal = "COMPRA"
+        justificativa = "RSI em zona de sobrevenda (pressão de alta iminente)."
+    elif rsi > 65:
+        score -= 25
+        sinal = "VENDA"
+        justificativa = "RSI em zona de sobrecompra (pressão de baixa iminente)."
+    else:
+        sinal = "COMPRA" if score >= 50 else "VENDA"
+        justificativa = "Tendência acompanhada pelas médias móveis EMA 9."
 
-        # Cálculo de Stop Loss e Take Profit
-        fator_sl = 0.985 if sinal == "COMPRA" else 1.015
-        fator_tp = 1.03 if sinal == "COMPRA" else 0.97
+    score_final = min(98, max(20, int(score)))
+    
+    # Gerenciamento de Risco
+    fator_sl = 0.99 if sinal == "COMPRA" else 1.01
+    fator_tp = 1.02 if sinal == "COMPRA" else 0.98
 
-        return jsonify({
-            "ativo": symbol,
-            "fonte": "Yahoo Finance",
-            "timeframe": timeframe,
-            "sinal": sinal,
-            "score": score_final,
-            "probabilidade": min(95, score_final + 2),
-            "casos": len(data),
-            "rsi": round(rsi, 2),
-            "preco_atual": round(preco_atual, 4),
-            "take_profit": round(preco_atual * fator_tp, 4),
-            "stop_loss": round(preco_atual * fator_sl, 4)
-        })
-
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
+    return jsonify({
+        "ativo": symbol,
+        "timeframe": tf_usuario,
+        "sinal": sinal,
+        "score": score_final,
+        "probabilidade": min(95, score_final + 2),
+        "rsi": rsi,
+        "preco_atual": round(preco, 4),
+        "take_profit": round(preco * fator_tp, 4),
+        "stop_loss": round(preco * fator_sl, 4),
+        "justificativa": justificativa,
+        "multitimeframe": tf_comparativo
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
