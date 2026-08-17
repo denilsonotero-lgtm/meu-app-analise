@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Quantium</title>
+  <title>Quantium DOPM</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
     body { background-color: #0f0f13; color: #ffffff; display: flex; justify-content: center; padding: 20px; }
@@ -11,20 +11,29 @@
     .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .badge-live { background-color: #2d1a4e; color: #a855f7; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
     .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
-    .input-group input { width: 100%; padding: 12px; background-color: #1e1e2a; border: 1px solid #2b2b3d; border-radius: 8px; color: #fff; }
-    .btn-primary { width: 100%; padding: 14px; background-color: #6366f1; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .card { background-color: #1a1a26; border: 1px solid #312e81; border-radius: 12px; padding: 16px; }
+    .input-group input { width: 100%; padding: 12px; background-color: #1e1e2a; border: 1px solid #2b2b3d; border-radius: 8px; color: #fff; text-transform: uppercase; }
+    
+    /* Seleção de Timeframe */
+    .tf-label { font-size: 0.85rem; color: #9ca3af; margin-bottom: 5px; }
+    .timeframes { display: flex; gap: 8px; justify-content: space-between; }
+    .tf-btn { flex: 1; padding: 8px; background-color: #1e1e2a; border: 1px solid #2b2b3d; color: #fff; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    .tf-btn.active { background-color: #6366f1; border-color: #6366f1; }
+
+    .btn-primary { width: 100%; padding: 14px; background-color: #6366f1; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    .card { background-color: #1a1a26; border: 1px solid #312e81; border-radius: 12px; padding: 16px; margin-bottom: 15px; }
     .card-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
     .score { background-color: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
-    .signal-type { color: #10b981; font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; }
-    .stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: #9ca3af; }
+    .signal-type { color: #10b981; font-weight: bold; font-size: 1.4rem; margin-bottom: 12px; }
+    
+    .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: #9ca3af; background-color: #12121a; padding: 12px; border-radius: 8px; }
+    .grid-info div span { color: #ffffff; font-weight: bold; display: block; margin-top: 2px; }
   </style>
 </head>
 <body>
 
   <div class="container">
     <div class="header">
-      <div style="font-weight: bold;">QUANTIUM ANALYTICS</div>
+      <div style="font-weight: bold;">QUANTIUM DOPM</div>
       <div class="badge-live">LIVE ⚡</div>
     </div>
 
@@ -32,51 +41,80 @@
       <div class="input-group">
         <input type="text" id="assetInput" value="EURUSD" placeholder="Ex: EURUSD, BTCUSDT...">
       </div>
+
+      <div>
+        <div class="tf-label">Timeframe:</div>
+        <div class="timeframes">
+          <button class="tf-btn" onclick="selectTF('5m', this)">5m</button>
+          <button class="tf-btn" onclick="selectTF('15m', this)">15m</button>
+          <button class="tf-btn active" onclick="selectTF('1h', this)">1h</button>
+          <button class="tf-btn" onclick="selectTF('4h', this)">4h</button>
+          <button class="tf-btn" onclick="selectTF('1d', this)">1d</button>
+        </div>
+      </div>
+
       <button class="btn-primary" onclick="analisarMercado()">ESCANEAR MERCADO</button>
     </div>
 
     <div class="card">
       <div class="card-header">
-        <span id="displayAsset" style="font-weight: bold;">EURUSD • FOREX</span>
+        <span id="displayAsset" style="font-weight: bold;">EURUSD • 1h</span>
         <span class="score" id="displayScore">--/100</span>
       </div>
       <div class="signal-type" id="displaySignal">AGUARDANDO...</div>
-      <div class="stats">
-        <span id="displayProb">Probabilidade: --%</span>
-        <span id="displayCases">Casos: --</span>
+
+      <div class="grid-info">
+        <div>Probabilidade: <span id="displayProb">--%</span></div>
+        <div>RSI (14): <span id="displayRSI">--</span></div>
+        <div>Take Profit: <span id="displayTP" style="color: #10b981;">--</span></div>
+        <div>Stop Loss: <span id="displaySL" style="color: #ef4444;">--</span></div>
       </div>
     </div>
   </div>
 
   <script>
+    let selectedTimeframe = '1h';
+
+    function selectTF(tf, btn) {
+      selectedTimeframe = tf;
+      document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
     async function analisarMercado() {
       const ativo = document.getElementById('assetInput').value.trim().toUpperCase() || 'EURUSD';
       document.getElementById('displaySignal').innerText = 'ANALISANDO...';
       document.getElementById('displaySignal').style.color = '#ffffff';
 
       try {
-        // URL oficial do seu serviço
-        const response = await fetch(`https://meu-app-analise.onrender.com/api/analise?symbol=${ativo}`);
+        const response = await fetch(`https://meu-app-analise.onrender.com/api/analise?symbol=${ativo}&timeframe=${selectedTimeframe}`);
         
-        if (!response.ok) {
-          throw new Error('Erro ao buscar dados');
-        }
+        if (!response.ok) throw new Error('Erro ao obter dados');
 
         const data = await response.json();
 
-        document.getElementById('displayAsset').innerText = `${data.ativo} • ${data.fonte}`;
+        document.getElementById('displayAsset').innerText = `${data.ativo} • ${data.timeframe}`;
         document.getElementById('displayScore').innerText = `${data.score}/100`;
         document.getElementById('displaySignal').innerText = data.sinal;
-        document.getElementById('displaySignal').style.color = (data.sinal === 'COMPRA') ? '#10b981' : '#ef4444';
-        document.getElementById('displayProb').innerText = `Probabilidade: ${data.probabilidade}%`;
-        document.getElementById('displayCases').innerText = `Velas: ${data.casos}`;
+        
+        if (data.sinal === 'COMPRA') {
+          document.getElementById('displaySignal').style.color = '#10b981';
+        } else if (data.sinal === 'VENDA') {
+          document.getElementById('displaySignal').style.color = '#ef4444';
+        } else {
+          document.getElementById('displaySignal').style.color = '#eab308';
+        }
+
+        document.getElementById('displayProb').innerText = `${data.probabilidade}%`;
+        document.getElementById('displayRSI').innerText = data.rsi;
+        document.getElementById('displayTP').innerText = data.take_profit;
+        document.getElementById('displaySL').innerText = data.stop_loss;
+
       } catch (err) {
-        document.getElementById('displayAsset').innerText = `${ativo} • N/A`;
+        document.getElementById('displayAsset').innerText = `${ativo} • Erro`;
         document.getElementById('displayScore').innerText = `--/100`;
         document.getElementById('displaySignal').innerText = 'ERRO DE CONEXÃO';
         document.getElementById('displaySignal').style.color = '#ef4444';
-        document.getElementById('displayProb').innerText = 'Probabilidade: --%';
-        document.getElementById('displayCases').innerText = 'Casos: 0';
       }
     }
   </script>
