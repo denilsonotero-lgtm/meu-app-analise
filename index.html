@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Análise Probabilística</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+    body { background-color: #0f0f13; color: #ffffff; display: flex; justify-content: center; padding: 20px; }
+    .container { width: 100%; max-width: 480px; background-color: #16161e; border-radius: 16px; padding: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .logo { font-weight: bold; }
+    .badge-live { background-color: #2d1a4e; color: #a855f7; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+    .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+    .input-group input { width: 100%; padding: 12px; background-color: #1e1e2a; border: 1px solid #2b2b3d; border-radius: 8px; color: #fff; }
+    .btn-primary { width: 100%; padding: 14px; background-color: #6366f1; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .card { background-color: #1a1a26; border: 1px solid #312e81; border-radius: 12px; padding: 16px; }
+    .card-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
+    .asset-name { font-weight: bold; }
+    .score { background-color: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
+    .signal-type { color: #10b981; font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; }
+    .stats { display: flex; justify-content: space-between; font-size: 0.85rem; color: #9ca3af; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo">QUANTIUM ANALYTICS</div>
+      <div class="badge-live">LIVE ⚡</div>
+    </div>
+
+    <div class="controls">
+      <div class="input-group">
+        <input type="text" id="assetInput" value="EUR/USD" placeholder="Digite o ativo...">
+      </div>
+      <button class="btn-primary" onclick="analisarMercado()">ESCANEAR MERCADO</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="asset-name" id="displayAsset">EUR/USD • 1h</span>
+        <span class="score" id="displayScore">--/100</span>
+      </div>
+      <div class="signal-type" id="displaySignal">AGUARDANDO...</div>
+      <div class="stats">
+        <span id="displayProb">Probabilidade: --%</span>
+        <span id="displayCases">Casos: --</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function analisarMercado() {
+      const ativo = document.getElementById('assetInput').value || 'EURUSD';
+      document.getElementById('displaySignal').innerText = 'ANALISANDO...';
+
+      // Simulação do algoritmo de análise
+      setTimeout(() => {
+        const score = Math.floor(Math.random() * (95 - 70 + 1)) + 70;
+        const direcao = Math.random() > 0.5 ? 'COMPRA' : 'VENDA';
+        const probabilidade = Math.floor(Math.random() * (90 - 75 + 1)) + 75;
+
+        document.getElementById('displayAsset').innerText = `${ativo.toUpperCase()} • 1h`;
+        document.getElementById('displayScore').innerText = `${score}/100`;
+        document.getElementById('displaySignal').innerText = direcao;
+        document.getElementById('displaySignal').style.color = direcao === 'COMPRA' ? '#10b981' : '#ef4444';
+        document.getElementById('displayProb').innerText = `Probabilidade: ${probabilidade}%`;
+        document.getElementById('displayCases').innerText = `Casos: 2400`;
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
