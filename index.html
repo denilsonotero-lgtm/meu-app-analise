@@ -8,13 +8,25 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
         body { background: #0b0b10; color: #fff; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 480px; }
-        .slider-box { background: #161622; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #2a2a3c; }
-        input[type=range] { width: 100%; cursor: pointer; }
-        .tabs, .timeframes { display: grid; gap: 6px; margin-bottom: 15px; }
-        .tabs { grid-template-columns: 1fr 1fr 1fr; }
-        .timeframes { grid-template-columns: repeat(6, 1fr); }
-        .btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
-        .btn.active { background: #6366f1; border-color: #818cf8; color: white; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .title { font-size: 1.1rem; font-weight: bold; }
+        .live-badge { background: #2e1065; color: #a78bfa; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; border: 1px solid #7c3aed; }
+
+        .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px; }
+        .tab-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
+        .tab-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
+
+        /* Barra de Pesquisa Restaurada */
+        .search-box { width: 100%; background: #161622; border: 1px solid #2a2a3c; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; outline: none; }
+        .search-box::placeholder { color: #6b7280; }
+
+        .timeframes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 15px; }
+        .tf-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 8px 0; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
+        .tf-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
+
+        .slider-box { background: #161622; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #2a2a3c; }
+        input[type=range] { width: 100%; cursor: pointer; margin-top: 6px; }
+
         .card { background: #161622; border: 1px solid #2a2a3c; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
         .price-tag { color: #38bdf8; font-size: 0.95rem; margin-bottom: 10px; }
@@ -23,43 +35,74 @@
 </head>
 <body>
 <div class="container">
-    <h3 style="margin-bottom: 15px;">QUANTIUM DOPM PRO</h3>
+    <div class="header">
+        <div class="title">QUANTIUM DOPM PRO</div>
+        <div class="live-badge">LIVE ⚡</div>
+    </div>
+
+    <!-- Abas de Categorias -->
     <div class="tabs">
-        <button class="btn" onclick="setCat('forex', this)">Forex</button>
-        <button class="btn active" onclick="setCat('crypto', this)">Crypto</button>
-        <button class="btn" onclick="setCat('b3', this)">B3</button>
+        <button class="tab-btn" onclick="setCat('forex', this)">Forex</button>
+        <button class="tab-btn active" onclick="setCat('crypto', this)">Crypto</button>
+        <button class="tab-btn" onclick="setCat('b3', this)">B3</button>
     </div>
+
+    <!-- Barra de Pesquisa de Ativos -->
+    <input type="text" id="searchInput" class="search-box" placeholder="Pesquisar ativo (ex: BTC-USD, PETR4.SA)..." oninput="scan()">
+
+    <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 6px;">Timeframe:</div>
     <div class="timeframes">
-        <button class="btn" onclick="setTF('1m', this)">1m</button>
-        <button class="btn" onclick="setTF('5m', this)">5m</button>
-        <button class="btn" onclick="setTF('15m', this)">15m</button>
-        <button class="btn active" onclick="setTF('1h', this)">1h</button>
-        <button class="btn" onclick="setTF('4h', this)">4h</button>
-        <button class="btn" onclick="setTF('1d', this)">1d</button>
+        <button class="tf-btn" onclick="setTF('1m', this)">1m</button>
+        <button class="tf-btn" onclick="setTF('5m', this)">5m</button>
+        <button class="tf-btn" onclick="setTF('15m', this)">15m</button>
+        <button class="tf-btn active" onclick="setTF('1h', this)">1h</button>
+        <button class="tf-btn" onclick="setTF('4h', this)">4h</button>
+        <button class="tf-btn" onclick="setTF('1d', this)">1d</button>
     </div>
+
+    <!-- Slider de Score Mínimo -->
     <div class="slider-box">
         <label style="font-size: 0.85rem; color: #9ca3af;">Score Mínimo: <span id="scoreVal" style="color: #fff; font-weight: bold;">0</span></label>
         <input type="range" id="scoreRange" min="0" max="100" value="0" oninput="updateScore(this.value)">
     </div>
+
+    <!-- Container dos Cards do Top 5 -->
     <div id="cardsContainer"></div>
 </div>
 
 <script>
     let cat = 'crypto', tf = '1h', scoreMin = 0;
 
-    function setCat(c, btn) { cat = c; document.querySelectorAll('.tabs .btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); scan(); }
-    function setTF(t, btn) { tf = t; document.querySelectorAll('.timeframes .btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); scan(); }
-    function updateScore(val) { scoreMin = val; document.getElementById('scoreVal').innerText = val; scan(); }
+    function setCat(c, btn) {
+        cat = c;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        scan();
+    }
+
+    function setTF(t, btn) {
+        tf = t;
+        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        scan();
+    }
+
+    function updateScore(val) {
+        scoreMin = val;
+        document.getElementById('scoreVal').innerText = val;
+        scan();
+    }
 
     async function scan() {
+        const busca = document.getElementById('searchInput').value;
         try {
-            let res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${cat}&timeframe=${tf}&score_min=${scoreMin}`);
+            let res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${cat}&timeframe=${tf}&score_min=${scoreMin}&busca=${encodeURIComponent(busca)}`);
             let data = await res.json();
             
-            document.getElementById('cardsContainer').innerHTML = data.map(i => `
+            document.getElementById('cardsContainer').innerHTML = data.map((i, index) => `
                 <div class="card">
                     <div class="card-header">
-                        <span>${i.symbol}</span>
+                        <span>#${index + 1} - ${i.symbol}</span>
                         <span style="color: #34d399;">Score: ${i.score}</span>
                     </div>
                     <div class="price-tag">Preço Atual: <b>${i.price}</b></div>
