@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantium DOPM Pro - Raio-X & Scanner</title>
+    <title>Quantium DOPM Pro - Raio-X & Scanner Avançado</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
         body { background: #0b0b10; color: #fff; padding: 15px; display: flex; justify-content: center; }
@@ -37,6 +37,7 @@
         .var-neg { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 
         .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #0b0b10; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 8px; }
+        .bollinger-box { background: #12121c; padding: 8px; border-radius: 6px; font-size: 0.78rem; color: #a78bfa; margin-bottom: 8px; border: 1px dashed #2a2a3c; }
         .market-info { font-size: 0.75rem; color: #9ca3af; display: flex; justify-content: space-between; border-top: 1px solid #2a2a3c; padding-top: 8px; }
     </style>
 </head>
@@ -125,6 +126,9 @@
                         <div>Tendência: <b>${i.trend}</b></div>
                         <div style="color: #34d399; margin-top: 4px;">TP: ${i.tp}</div>
                         <div style="color: #ef4444; margin-top: 4px;">SL: ${i.sl}</div>
+                    </div>
+                    <div class="bollinger-box">
+                        Bollinger: <b>${i.bollinger}</b>
                     </div>
                     <div class="market-info">
                         <span>Estado: <b>${i.market_status}</b></span>
