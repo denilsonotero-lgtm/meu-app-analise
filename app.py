@@ -3,35 +3,10 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
-import threading
-import json
-import websocket
+from motor_inteligente import prever_com_historico
 
 app = Flask(__name__)
 CORS(app)
-
-# Dicionário global para armazenar os preços em tempo real via WebSocket
-PRECOS_TEMPO_REAL = {}
-
-def on_message(ws, message):
-    try:
-        data = json.loads(message)
-        if 's' in data and 'c' in data:
-            symbol = data['s'] # Ex: BTCUSDT
-            price = float(data['c'])
-            PRECOS_TEMPO_REAL[symbol] = price
-    except:
-        pass
-
-def iniciar_websocket_binance():
-    # Conecta ao stream público da Binance para múltiplos tickers populares
-    socket_url = "wss://stream.binance.com:9443/ws/btcusdt@ticker"
-    ws = websocket.WebSocketApp(socket_url, on_message=on_message)
-    ws.run_forever()
-
-# Inicia o WebSocket da Binance em background
-t = threading.Thread(target=iniciar_websocket_binance, daemon=True)
-t.start()
 
 LISTAS = {
     'forex': ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X'],
@@ -43,15 +18,9 @@ def calcular_fibonacci(df):
     high = df['High'].max()
     low = df['Low'].min()
     diff = high - low
-    fib_levels = {
-        'fib_0': low,
-        'fib_236': high - (diff * 0.236),
-        'fib_382': high - (diff * 0.382),
-        'fib_500': high - (diff * 0.5),
-        'fib_618': high - (diff * 0.618),
-        'fib_100': high
+    return {
+        'fib_618': high - (diff * 0.618)
     }
-    return fib_levels
 
 def identificar_padrao_candle(df):
     if len(df) < 2: return "NEUTRO"
@@ -61,40 +30,52 @@ def identificar_padrao_candle(df):
     open_anterior = df['Open'].iloc[-2]
     if close_atual > open_atual and close_anterior < open_anterior and close_atual >= open_anterior and open_atual <= close_anterior:
         return "ENGOLFO DE ALTA 🟢"
-    elif close_atual < open_atual and close_anterior > open_anterior and close_atual <= open_anterior and close_atual >= close_anterior:
+    elif close_atual < open_atual and close_anterior > open_anterior and close_atual <= open_anterior and close_atual >= open_anterior:
         return "ENGOLFO DE BAIXA 🔴"
     return "PADRÃO NORMAL ⚖️"
 
-def motor_de_confluencia(df):
+def motor_de_confluencia(df, symbol):
     close = df['Close'].iloc[-1]
+    
     delta = df['Close'].diff()
     gain = delta.clip(lower=0).rolling(14).mean().iloc[-1]
     loss = -delta.clip(upper=0).rolling(14).mean().iloc[-1]
     rsi = 100 - (100 / (1 + (gain / loss))) if loss != 0 else 50
+    
     ema12 = df['Close'].ewm(span=12).mean().iloc[-1]
     ema26 = df['Close'].ewm(span=26).mean().iloc[-1]
     macd = ema12 - ema26
     signal = macd * 0.9 
-    sma20 = df['Close'].rolling(20).mean().iloc[-1]
-    std20 = df['Close'].rolling(20).std().iloc[-1]
-    lower_band = sma20 - (std20 * 2)
-    upper_band = sma20 + (std20 * 2)
+    
     fibs = calcular_fibonacci(df)
     perto_suporte_fib = abs(close - fibs['fib_618']) / close < 0.005 
     padrao_candle = identificar_padrao_candle(df)
-    score = 50 
-    if rsi < 30: score += 20
-    elif rsi > 70: score -= 20 
-    if macd > signal: score += 15
-    else: score -= 15
-    if close <= lower_band: score += 15 
-    elif close >= upper_band: score -= 15 
-    if perto_suporte_fib: score += 10
-    if "ALTA" in padrao_candle: score += 10
-    elif "BAIXA" in padrao_candle: score -= 10
-    score_final = int(min(99, max(10, score)))
+    
+    score_tecnico = 50 
+    if rsi < 30: score_tecnico += 20
+    elif rsi > 70: score_tecnico -= 20 
+    if macd > signal: score_tecnico += 15
+    else: score_tecnico -= 15
+    if perto_suporte_fib: score_tecnico += 10
+    if "ALTA" in padrao_candle: score_tecnico += 10
+    elif "BAIXA" in padrao_candle: score_tecnico -= 10
+    score_tecnico = int(min(99, max(10, score_tecnico)))
+
+    score_hist, amostras = prever_com_historico(df, symbol)
+
+    score_final = int((score_tecnico * 0.6) + (score_hist * 0.4))
+    score_final = int(min(99, max(10, score_final)))
+
     direcao = "COMPRA FORTE 🚀" if score_final >= 70 else ("VENDA FORTE 📉" if score_final <= 30 else "AGUARDAR / LATERAL ⚖️")
-    return {"score": score_final, "rsi": round(float(rsi), 1), "tendencia": direcao, "candle": padrao_candle, "fib_relevante": round(float(fibs['fib_618']), 2)}
+    
+    return {
+        "score": score_final,
+        "rsi": round(float(rsi), 1),
+        "tendencia": direcao,
+        "candle": padrao_candle,
+        "fib_relevante": round(float(fibs['fib_618']), 2),
+        "amostras_hist": amostras
+    }
 
 @app.route('/')
 def home():
@@ -107,44 +88,29 @@ def scanner():
     min_score = int(request.args.get('score_min', 0))
     ativos = [busca] if busca else LISTAS.get(cat, [])
     resultados = []
+    
     for s in ativos:
         try:
             df = yf.download(s, period="7d", interval="1h", progress=False)
-            if df.empty or len(df) < 30: continue
-            analise = motor_de_confluencia(df)
+            if df.empty or len(df) < 50: continue
             
-            # Substitui pelo preço em tempo real do WebSocket se disponível
-            preco_final = float(df['Close'].iloc[-1])
-            symbol_ws_key = s.replace("-", "").replace("=X", "").replace(".SA", "") + "USDT"
-            if symbol_ws_key in PRECOS_TEMPO_REAL:
-                preco_final = PRECOS_TEMPO_REAL[symbol_ws_key]
-
+            analise = motor_de_confluencia(df, s)
+            
             if analise["score"] >= min_score:
                 resultados.append({
                     "symbol": s,
-                    "price": round(preco_final, 4),
+                    "price": round(float(df['Close'].iloc[-1]), 4),
                     "score": analise["score"],
                     "rsi": analise["rsi"],
                     "trend": analise["tendencia"],
                     "candle": analise["candle"],
                     "fib": analise["fib_relevante"]
                 })
-        except: continue
+        except Exception as e:
+            continue
+            
     resultados = sorted(resultados, key=lambda x: x['score'], reverse=True)[:5]
     return jsonify(resultados)
-
-@app.route('/api/xtb-realtime', methods=['GET'])
-def xtb_realtime():
-    symbol = request.args.get('symbol', 'EURUSD').upper()
-    try:
-        preco_atual = 0.0 
-        return jsonify({
-            "symbol": symbol,
-            "price": preco_atual,
-            "status": "success"
-        })
-    except Exception as e:
-        return jsonify({"error": str(e), "status": "error"}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
