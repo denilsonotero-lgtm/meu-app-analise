@@ -3,52 +3,91 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quantium DOPM - Raio-X</title>
+  <title>Quantium DOPM Pro</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-    body { background-color: #0f0f13; color: #ffffff; display: flex; justify-content: center; padding: 20px; }
-    .container { width: 100%; max-width: 480px; background-color: #16161e; border-radius: 16px; padding: 20px; }
-    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    body { background-color: #0f0f13; color: #ffffff; display: flex; justify-content: center; padding: 10px; }
+    .container { width: 100%; max-width: 480px; background-color: #16161e; border-radius: 16px; padding: 16px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     .badge-live { background-color: #2d1a4e; color: #a855f7; padding: 4px 12px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
-    .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    
+    /* Abas de Categorias */
+    .tabs { display: flex; gap: 5px; margin-bottom: 15px; background-color: #12121a; padding: 4px; border-radius: 8px; }
+    .tab-btn { flex: 1; padding: 8px 4px; background: transparent; border: none; color: #9ca3af; font-size: 0.75rem; font-weight: bold; border-radius: 6px; cursor: pointer; text-align: center; }
+    .tab-btn.active { background-color: #6366f1; color: #fff; }
+
+    .controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; }
     .input-group input { width: 100%; padding: 12px; background-color: #1e1e2a; border: 1px solid #2b2b3d; border-radius: 8px; color: #fff; text-transform: uppercase; }
-    .timeframes { display: flex; gap: 8px; }
-    .tf-btn { flex: 1; padding: 8px; background-color: #1e1e2a; border: 1px solid #2b2b3d; color: #fff; border-radius: 6px; font-weight: bold; cursor: pointer; }
+    
+    .tf-label { font-size: 0.8rem; color: #9ca3af; margin-bottom: 4px; }
+    .timeframes { display: flex; gap: 6px; justify-content: space-between; }
+    .tf-btn { flex: 1; padding: 6px; background-color: #1e1e2a; border: 1px solid #2b2b3d; color: #fff; border-radius: 6px; font-weight: bold; font-size: 0.8rem; cursor: pointer; }
     .tf-btn.active { background-color: #6366f1; border-color: #6366f1; }
+
+    /* Configuração de Auto-Scan */
+    .auto-scan-box { display: flex; justify-content: space-between; align-items: center; background-color: #12121a; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; color: #9ca3af; }
+    .auto-scan-box select { background: #1e1e2a; color: #fff; border: 1px solid #2b2b3d; padding: 4px; border-radius: 4px; }
+
     .btn-primary { width: 100%; padding: 14px; background-color: #6366f1; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
     
     .card { background-color: #1a1a26; border: 1px solid #312e81; border-radius: 12px; padding: 16px; margin-bottom: 15px; }
     .card-header { display: flex; justify-content: space-between; margin-bottom: 12px; }
     .score { background-color: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 6px; font-weight: bold; }
     .signal-type { color: #10b981; font-weight: bold; font-size: 1.4rem; margin-bottom: 12px; }
-    .btn-raiox { width: 100%; padding: 10px; background-color: #2e2a52; color: #a5b4fc; border: 1px solid #4338ca; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+    
+    .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem; color: #9ca3af; background-color: #12121a; padding: 12px; border-radius: 8px; }
+    .grid-info div span { color: #ffffff; font-weight: bold; display: block; margin-top: 2px; }
 
-    /* Painel Raio-X Estendido */
+    .btn-raiox { width: 100%; padding: 12px; background-color: #2e2a52; color: #a5b4fc; border: 1px solid #4338ca; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+
     .raiox-panel { display: none; background-color: #12121a; border-radius: 12px; padding: 16px; border: 1px solid #2b2b3d; margin-top: 15px; }
-    .raiox-title { font-size: 1rem; font-weight: bold; color: #6366f1; margin-bottom: 10px; }
-    .section-box { background-color: #1a1a26; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem; }
+    .raiox-title { font-size: 0.85rem; font-weight: bold; color: #6366f1; margin-bottom: 6px; margin-top: 10px; }
+    .section-box { background-color: #1a1a26; padding: 10px; border-radius: 8px; font-size: 0.8rem; }
     .tf-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #2b2b3d; }
-    .calc-input { width: 100%; padding: 8px; background-color: #1e1e2a; border: 1px solid #2b2b3d; border-radius: 6px; color: #fff; margin-top: 5px; }
   </style>
 </head>
 <body>
 
   <div class="container">
     <div class="header">
-      <div style="font-weight: bold;">QUANTIUM DOPM</div>
-      <div class="badge-live">LIVE ⚡</div>
+      <div style="font-weight: bold;">QUANTIUM DOPM PRO</div>
+      <div class="badge-live" id="statusBadge">LIVE ⚡</div>
+    </div>
+
+    <!-- Abas de Categorias -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('forex', 'EURUSD', this)">Forex & Índices</button>
+      <button class="tab-btn" onclick="switchTab('crypto', 'BTCUSDT', this)">Criptomoedas</button>
+      <button class="tab-btn" onclick="switchTab('b3', 'PETR4.SA', this)">B3 (Brasil)</button>
     </div>
 
     <div class="controls">
       <div class="input-group">
-        <input type="text" id="assetInput" value="EURUSD" placeholder="Ex: EURUSD, BTCUSDT...">
+        <input type="text" id="assetInput" value="EURUSD" placeholder="Ex: EURUSD, US100, PETR4...">
       </div>
-      <div class="timeframes">
-        <button class="tf-btn" onclick="selectTF('5m', this)">5m</button>
-        <button class="tf-btn" onclick="selectTF('15m', this)">15m</button>
-        <button class="tf-btn active" onclick="selectTF('1h', this)">1h</button>
-        <button class="tf-btn" onclick="selectTF('1d', this)">1d</button>
+
+      <div>
+        <div class="tf-label">Timeframe:</div>
+        <div class="timeframes">
+          <button class="tf-btn" onclick="selectTF('5m', this)">5m</button>
+          <button class="tf-btn" onclick="selectTF('15m', this)">15m</button>
+          <button class="tf-btn active" onclick="selectTF('1h', this)">1h</button>
+          <button class="tf-btn" onclick="selectTF('4h', this)">4h</button>
+          <button class="tf-btn" onclick="selectTF('1d', this)">1d</button>
+        </div>
       </div>
+
+      <!-- Configuração de Auto-Scan -->
+      <div class="auto-scan-box">
+        <span>Atualização Automática:</span>
+        <select id="autoScanInterval" onchange="mudarAutoScan()">
+          <option value="0">Desativado</option>
+          <option value="15">A cada 15 seg</option>
+          <option value="30">A cada 30 seg</option>
+          <option value="60">A cada 1 min</option>
+        </select>
+      </div>
+
       <button class="btn-primary" onclick="analisarMercado()">ESCANEAR MERCADO</button>
     </div>
 
@@ -58,14 +97,20 @@
         <span class="score" id="displayScore">--/100</span>
       </div>
       <div class="signal-type" id="displaySignal">AGUARDANDO...</div>
-      <p style="font-size: 0.85rem; color: #9ca3af;">Probabilidade: <span id="displayProb" style="color: #fff;">--%</span></p>
-      
+
+      <div class="grid-info">
+        <div>Probabilidade: <span id="displayProb">--%</span></div>
+        <div>RSI (14): <span id="displayRSI">--</span></div>
+        <div>Take Profit: <span id="displayTP" style="color: #10b981;">--</span></div>
+        <div>Stop Loss: <span id="displaySL" style="color: #ef4444;">--</span></div>
+      </div>
+
       <button class="btn-raiox" onclick="toggleRaioX()">VER RAIO-X COMPLETO →</button>
     </div>
 
-    <!-- Painel de Raio-X Detalhado -->
+    <!-- Painel Raio-X -->
     <div class="raiox-panel" id="raioXPanel">
-      <div class="raiox-title">🧠 JUSTIFICATIVA TÉCNICA</div>
+      <div class="raiox-title">🧠 ANÁLISE HISTÓRICA E TÉCNICA</div>
       <div class="section-box" id="displayJustificativa">Aguardando análise...</div>
 
       <div class="raiox-title">📊 COMPARATIVO DE TIMEFRAMES</div>
@@ -78,23 +123,16 @@
 
       <div class="raiox-title">🎯 GERENCIAMENTO DE RISCO</div>
       <div class="section-box">
-        <div>Entrada: <strong id="displayEntrada">--</strong></div>
-        <div style="color: #10b981;">Take Profit: <strong id="displayTP">--</strong></div>
-        <div style="color: #ef4444;">Stop Loss: <strong id="displaySL">--</strong></div>
-      </div>
-
-      <div class="raiox-title">🧮 CALCULADORA DE POSIÇÃO</div>
-      <div class="section-box">
-        <label style="font-size: 0.75rem;">Capital ($):</label>
-        <input type="number" id="capitalInput" value="1000" class="calc-input" oninput="calcularLote()">
-        <p style="margin-top: 8px; font-weight: bold; color: #34d399;">Risco Recomendado (1%): $<span id="displayRisco">10.00</span></p>
+        <div style="margin-bottom: 4px;">Entrada Atual: <strong id="displayEntrada">--</strong></div>
+        <div style="color: #10b981; margin-bottom: 4px;">Take Profit: <strong id="displayTPDetail">--</strong></div>
+        <div style="color: #ef4444;">Stop Loss: <strong id="displaySLDetail">--</strong></div>
       </div>
     </div>
   </div>
 
   <script>
     let selectedTimeframe = '1h';
-    let dadosGlobais = null;
+    let autoScanTimer = null;
 
     function selectTF(tf, btn) {
       selectedTimeframe = tf;
@@ -102,49 +140,80 @@
       btn.classList.add('active');
     }
 
+    function switchTab(categoria, defaultAsset, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('assetInput').value = defaultAsset;
+      analisarMercado();
+    }
+
     function toggleRaioX() {
       const panel = document.getElementById('raioXPanel');
       panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     }
 
-    function calcularLote() {
-      const cap = parseFloat(document.getElementById('capitalInput').value) || 0;
-      document.getElementById('displayRisco').innerText = (cap * 0.01).toFixed(2);
+    function mudarAutoScan() {
+      const segundos = parseInt(document.getElementById('autoScanInterval').value);
+      if (autoScanTimer) clearInterval(autoScanTimer);
+
+      if (segundos > 0) {
+        document.getElementById('statusBadge').innerText = `AUTO (${segundos}s)`;
+        autoScanTimer = setInterval(() => {
+          analisarMercado(true); // true para scan silencioso
+        }, segundos * 1000);
+      } else {
+        document.getElementById('statusBadge').innerText = 'LIVE ⚡';
+      }
     }
 
-    async function analisarMercado() {
+    async function analisarMercado(silencioso = false) {
       const ativo = document.getElementById('assetInput').value.trim().toUpperCase() || 'EURUSD';
-      document.getElementById('displaySignal').innerText = 'ANALISANDO...';
+      if (!silencioso) {
+        document.getElementById('displaySignal').innerText = 'ANALISANDO...';
+        document.getElementById('displaySignal').style.color = '#ffffff';
+      }
 
       try {
         const response = await fetch(`https://meu-app-analise.onrender.com/api/analise?symbol=${ativo}&timeframe=${selectedTimeframe}`);
-        if (!response.ok) throw new Error('Erro na API');
+        if (!response.ok) throw new Error('Erro ao obter dados');
 
         const data = await response.json();
-        dadosGlobais = data;
 
         document.getElementById('displayAsset').innerText = `${data.ativo} • ${data.timeframe}`;
         document.getElementById('displayScore').innerText = `${data.score}/100`;
         document.getElementById('displaySignal').innerText = data.sinal;
-        document.getElementById('displaySignal').style.color = data.sinal === 'COMPRA' ? '#10b981' : '#ef4444';
+        
+        if (data.sinal === 'COMPRA') {
+          document.getElementById('displaySignal').style.color = '#10b981';
+        } else if (data.sinal === 'VENDA') {
+          document.getElementById('displaySignal').style.color = '#ef4444';
+        } else {
+          document.getElementById('displaySignal').style.color = '#eab308';
+        }
+
         document.getElementById('displayProb').innerText = `${data.probabilidade}%`;
-
-        // Preencher Raio-X
-        document.getElementById('displayJustificativa').innerText = data.justificativa;
-        document.getElementById('tf5m').innerText = data.multitimeframe['5m'] || '--';
-        document.getElementById('tf15m').innerText = data.multitimeframe['15m'] || '--';
-        document.getElementById('tf1h').innerText = data.multitimeframe['1h'] || '--';
-        document.getElementById('tf1d').innerText = data.multitimeframe['1d'] || '--';
-
-        document.getElementById('displayEntrada').innerText = data.preco_atual;
+        document.getElementById('displayRSI').innerText = data.rsi;
         document.getElementById('displayTP').innerText = data.take_profit;
         document.getElementById('displaySL').innerText = data.stop_loss;
+
+        document.getElementById('displayJustificativa').innerText = data.justificativa || 'Análise baseada em histórico de preços e médias.';
         
-        calcularLote();
+        if (data.multitimeframe) {
+          document.getElementById('tf5m').innerText = data.multitimeframe['5m'] || '--';
+          document.getElementById('tf15m').innerText = data.multitimeframe['15m'] || '--';
+          document.getElementById('tf1h').innerText = data.multitimeframe['1h'] || '--';
+          document.getElementById('tf1d').innerText = data.multitimeframe['1d'] || '--';
+        }
+
+        document.getElementById('displayEntrada').innerText = data.preco_atual || '--';
+        document.getElementById('displayTPDetail').innerText = data.take_profit || '--';
+        document.getElementById('displaySLDetail').innerText = data.stop_loss || '--';
 
       } catch (err) {
-        document.getElementById('displaySignal').innerText = 'ERRO DE CONEXÃO';
-        document.getElementById('displaySignal').style.color = '#ef4444';
+        if (!silencioso) {
+          document.getElementById('displaySignal').innerText = 'ERRO DE CONEXÃO';
+          document.getElementById('displaySignal').style.color = '#ef4444';
+        }
       }
     }
   </script>
