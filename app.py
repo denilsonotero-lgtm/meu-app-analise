@@ -1,5 +1,5 @@
 import yfinance as yf
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -8,10 +8,11 @@ from motor_inteligente import prever_com_historico
 app = Flask(__name__)
 CORS(app)
 
+# Listas expandidas com 10 ativos principais para cada categoria
 LISTAS = {
-    'forex': ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X'],
-    'crypto': ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD'],
-    'b3': ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'WEGE3.SA']
+    'forex': ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X', 'USDCHF=X', 'NZDUSD=X', 'EURGBP=X', 'EURJPY=X', 'GBPJPY=X'],
+    'crypto': ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD', 'AVAX-USD', 'DOT-USD', 'LINK-USD'],
+    'b3': ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'WEGE3.SA', 'BBAS3.SA', 'ABEV3.SA', 'RENT3.SA', 'JBSS3.SA', 'MGLU3.SA']
 }
 
 def calcular_fibonacci(df):
@@ -76,41 +77,59 @@ def motor_de_confluencia(df, symbol):
         "fib_relevante": round(float(fibs['fib_618']), 2),
         "amostras_hist": amostras
     }
+
 @app.route('/')
 def home():
     return "API do Quantum Dopm Pro está online e funcionando!"
 
-
 @app.route('/api/scanner', methods=['GET'])
 def scanner():
-    cat = request.args.get('categoria', 'crypto')
+    cat = request.args.get('categoria', 'crypto').lower()
     busca = request.args.get('busca', '').strip().upper()
     min_score = int(request.args.get('score_min', 0))
-    ativos = [busca] if busca else LISTAS.get(cat, [])
+    
+    # Define os ativos a varrer
+    if busca:
+        ativos = [busca]
+    else:
+        ativos = LISTAS.get(cat, LISTAS['crypto'])
+        
     resultados = []
     
     for s in ativos:
         try:
             df = yf.download(s, period="7d", interval="1h", progress=False)
-            if df.empty or len(df) < 50: continue
+            if df.empty or len(df) < 50: 
+                continue
             
             analise = motor_de_confluencia(df, s)
+            preco_atual = float(df['Close'].iloc[-1])
+            
+            # Dados estruturados para alimentar os cards e a tela de Raio-X
+            ativo_info = {
+                "symbol": s,
+                "price": round(preco_atual, 4),
+                "score": analise["score"],
+                "probabilidade": analise["score"],
+                "rsi": analise["rsi"],
+                "tendencia": analise["tendencia"],
+                "candle": analise["candle"],
+                "fib_relevante": analise["fib_relevante"],
+                "amostras_hist": analise["amostras_hist"],
+                # Alvos automáticos para o gerenciamento de risco do Raio-X
+                "entrada": round(preco_atual, 4),
+                "take_profit": round(preco_atual * 1.02, 4),
+                "stop_loss": round(preco_atual * 0.98, 4)
+            }
             
             if analise["score"] >= min_score:
-                resultados.append({
-                    "symbol": s,
-                    "price": round(float(df['Close'].iloc[-1]), 4),
-                    "score": analise["score"],
-                    "rsi": analise["rsi"],
-                    "trend": analise["tendencia"],
-                    "candle": analise["candle"],
-                    "fib": analise["fib_relevante"]
-                })
+                resultados.append(ativo_info)
         except Exception as e:
             continue
             
-    resultados = sorted(resultados, key=lambda x: x['score'], reverse=True)[:5]
-    return jsonify(resultados)
+    # Ordena do maior score para o menor e pega os 10 melhores
+    resultados = sorted(resultados, key=lambda x: x['score'], reverse=True)
+    return jsonify(resultados[:10])
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=10000)
