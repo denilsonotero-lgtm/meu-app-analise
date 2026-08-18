@@ -1,14 +1,18 @@
 import os
-import json
-import requests
 import pandas as pd
 import yfinance as yf
-import pandas_ta as ta
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
+
+def calcular_rsi_manual(series, window=14):
+    delta = series.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
 
 def extrair_dados_tf(ticker_symbol, interval):
     try:
@@ -19,8 +23,9 @@ def extrair_dados_tf(ticker_symbol, interval):
             data.columns = data.columns.get_level_values(0)
             
         df_close = data['Close']
-        rsi = ta.rsi(df_close, length=14).iloc[-1]
-        ema_9 = ta.ema(df_close, length=9).iloc[-1]
+        rsi_series = calcular_rsi_manual(df_close, 14)
+        rsi = rsi_series.iloc[-1]
+        ema_9 = df_close.ewm(span=9, adjust=False).mean().iloc[-1]
         preco = df_close.iloc[-1]
         
         tendencia = "ALTA" if preco > ema_9 else "BAIXA"
@@ -44,15 +49,12 @@ def analisar():
         elif 'BTC' in symbol or 'ETH' in symbol:
             ticker_symbol = f"{symbol[:3]}-USD"
 
-    # Mapeamento para o Yahoo Finance
     mapa_tf = {'5m': '5m', '15m': '15m', '1h': '60m', '4h': '1h', '1d': '1d'}
     
-    # 1. Análise do Timeframe selecionado
     dados_principal = extrair_dados_tf(ticker_symbol, mapa_tf.get(tf_usuario, '60m'))
     if not dados_principal:
-        return jsonify({"erro": "Ativo não encontrado ou dados indisponíveis"}), 404
+        return jsonify({"erro": "Ativo não encontrado"}), 404
 
-    # 2. Comparativo Multitimeframe para o Raio-X
     tf_comparativo = {}
     for tf_key, tf_val in [('5m', '5m'), ('15m', '15m'), ('1h', '60m'), ('1d', '1d')]:
         info = extrair_dados_tf(ticker_symbol, tf_val)
@@ -64,7 +66,6 @@ def analisar():
     rsi = dados_principal['rsi']
     preco = dados_principal['preco']
     
-    # Cálculo de pontuação e sinal
     score = 50
     if dados_principal['tendencia'] == "ALTA": score += 20
     else: score -= 20
@@ -82,8 +83,6 @@ def analisar():
         justificativa = "Tendência acompanhada pelas médias móveis EMA 9."
 
     score_final = min(98, max(20, int(score)))
-    
-    # Gerenciamento de Risco
     fator_sl = 0.99 if sinal == "COMPRA" else 1.01
     fator_tp = 1.02 if sinal == "COMPRA" else 0.98
 
