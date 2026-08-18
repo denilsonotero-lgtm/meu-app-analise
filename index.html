@@ -1,129 +1,49 @@
-import yfinance as yf
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import pandas as pd
-import numpy as np
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantium DOPM Pro</title>
+    <style>
+        :root { --bg: #07070c; --card: #11111b; --accent: #6366f1; --text: #f3f4f6; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 20px; }
+        .container { max-width: 500px; margin: auto; }
+        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #1f1f2e; }
+        .search-btn { background: var(--accent); color: white; padding: 10px; border-radius: 8px; border: none; width: 100%; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Quantium Raio-X ⚡</h1>
+    <input type="text" id="searchInput" placeholder="Ex: BTC-USD" style="width:100%; padding:10px; border-radius:8px; background:#11111b; color:#fff; border:1px solid #1f1f2e;">
+    <button class="search-btn" onclick="scan()" style="margin-top:10px;">Buscar / Rankear</button>
+    <div id="cardsContainer" style="margin-top:20px;"></div>
+</div>
+<script>
+    async function scan() {
+        const area = document.getElementById('cardsContainer');
+        const q = document.getElementById('searchInput').value.trim().toUpperCase();
+        area.innerHTML = '<p style="color:#6366f1;">Processando análise...</p>';
+        try {
+            const res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?busca=${q}`);
+            const data = await res.json();
+            
+            if(!data || data.length === 0) {
+                area.innerHTML = '<p style="color:#ef4444;">Nenhum ativo encontrado.</p>';
+                return;
+            }
 
-app = Flask(__name__)
-CORS(app)
-
-LISTAS = {
-    'forex': ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X'],
-    'crypto': ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD'],
-    'b3': ['PETR4.SA', 'VALE3.SA', 'ITUB4.SA', 'BBDC4.SA', 'WEGE3.SA']
-}
-
-def calcular_fibonacci(df):
-    high = df['High'].max()
-    low = df['Low'].min()
-    diff = high - low
-    
-    fib_levels = {
-        'fib_0': low,
-        'fib_236': high - (diff * 0.236),
-        'fib_382': high - (diff * 0.382),
-        'fib_500': high - (diff * 0.5),
-        'fib_618': high - (diff * 0.618),
-        'fib_100': high
+            area.innerHTML = data.map(i => `
+                <div class="card">
+                    <h3>${i.symbol} | Score: ${i.score}</h3>
+                    <p>Preço: ${i.price} | RSI: ${i.rsi}</p>
+                    <p>Tendência: ${i.trend}</p>
+                    <p>Candle: ${i.candle}</p>
+                </div>`).join('');
+        } catch(e) { 
+            area.innerHTML = '<p style="color:#ef4444;">Erro de conexão com o servidor.</p>'; 
+        }
     }
-    return fib_levels
-
-def identificar_padrao_candle(df):
-    if len(df) < 2: return "NEUTRO"
-    
-    close_atual = df['Close'].iloc[-1]
-    open_atual = df['Open'].iloc[-1]
-    close_anterior = df['Close'].iloc[-2]
-    open_anterior = df['Open'].iloc[-2]
-    
-    if close_atual > open_atual and close_anterior < open_anterior and close_atual >= open_anterior and open_atual <= close_anterior:
-        return "ENGOLFO DE ALTA 🟢"
-    elif close_atual < open_atual and close_anterior > open_anterior and close_atual <= open_anterior and close_atual >= close_anterior:
-        return "ENGOLFO DE BAIXA 🔴"
-    
-    return "PADRÃO NORMAL ⚖️"
-
-def motor_de_confluencia(df):
-    close = df['Close'].iloc[-1]
-    
-    delta = df['Close'].diff()
-    gain = delta.clip(lower=0).rolling(14).mean().iloc[-1]
-    loss = -delta.clip(upper=0).rolling(14).mean().iloc[-1]
-    rsi = 100 - (100 / (1 + (gain / loss))) if loss != 0 else 50
-    
-    ema12 = df['Close'].ewm(span=12).mean().iloc[-1]
-    ema26 = df['Close'].ewm(span=26).mean().iloc[-1]
-    macd = ema12 - ema26
-    signal = macd * 0.9 
-    
-    sma20 = df['Close'].rolling(20).mean().iloc[-1]
-    std20 = df['Close'].rolling(20).std().iloc[-1]
-    upper_band = sma20 + (std20 * 2)
-    lower_band = sma20 - (std20 * 2)
-    
-    fibs = calcular_fibonacci(df)
-    perto_suporte_fib = abs(close - fibs['fib_618']) / close < 0.005 
-    
-    padrao_candle = identificar_padrao_candle(df)
-    
-    score = 50 
-    
-    if rsi < 30: score += 20  
-    elif rsi > 70: score -= 20 
-    
-    if macd > signal: score += 15
-    else: score -= 15
-    
-    if close <= lower_band: score += 15 
-    elif close >= upper_band: score -= 15 
-    
-    if perto_suporte_fib: score += 10
-    
-    if "ALTA" in padrao_candle: score += 10
-    elif "BAIXA" in padrao_candle: score -= 10
-    
-    score_final = int(min(99, max(10, score)))
-    direcao = "COMPRA FORTE 🚀" if score_final >= 70 else ("VENDA FORTE 📉" if score_final <= 30 else "AGUARDAR / LATERAL ⚖️")
-    
-    return {
-        "score": score_final,
-        "rsi": round(float(rsi), 1),
-        "tendencia": direcao,
-        "candle": padrao_candle,
-        "fib_relevante": round(float(fibs['fib_618']), 2)
-    }
-
-@app.route('/api/scanner', methods=['GET'])
-def scanner():
-    cat = request.args.get('categoria', 'crypto')
-    busca = request.args.get('busca', '').strip().upper()
-    min_score = int(request.args.get('score_min', 0))
-    
-    ativos = [busca] if busca else LISTAS.get(cat, [])
-    resultados = []
-    
-    for s in ativos:
-        try:
-            df = yf.download(s, period="7d", interval="1h", progress=False)
-            if df.empty or len(df) < 30: continue
-            
-            analise = motor_de_confluencia(df)
-            
-            if analise["score"] >= min_score:
-                resultados.append({
-                    "symbol": s,
-                    "price": round(float(df['Close'].iloc[-1]), 4),
-                    "score": analise["score"],
-                    "rsi": analise["rsi"],
-                    "trend": analise["tendencia"],
-                    "candle": analise["candle"],
-                    "fib": analise["fib_relevante"]
-                })
-        except:
-            continue
-            
-    resultados = sorted(resultados, key=lambda x: x['score'], reverse=True)[:5]
-    return jsonify(resultados)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+</script>
+</body>
+</html>
