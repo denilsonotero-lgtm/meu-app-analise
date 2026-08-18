@@ -3,42 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantium DOPM Pro - Raio-X & Scanner Avançado</title>
+    <title>Quantium DOPM Pro - Terminal de Análise Avançada</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-        body { background: #0b0b10; color: #fff; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 480px; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .title { font-size: 1.1rem; font-weight: bold; letter-spacing: 0.5px; }
-        .live-badge { background: #2e1065; color: #a78bfa; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; border: 1px solid #7c3aed; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #07070c; color: #f3f4f6; padding: 12px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: #11111b; padding: 12px 15px; border-radius: 12px; border: 1px solid #1f1f2e; }
+        .title { font-size: 1rem; font-weight: 800; letter-spacing: 0.8px; color: #818cf8; }
+        .live-badge { background: rgba(124, 58, 237, 0.15); color: #c084fc; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; border: 1px solid rgba(124, 58, 237, 0.4); }
 
-        .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px; }
-        .tab-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
-        .tab-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
+        .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+        .tab-btn { background: #11111b; border: 1px solid #1f1f2e; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: #6366f1; border-color: #818cf8; color: white; box-shadow: 0 0 12px rgba(99, 102, 241, 0.4); }
 
-        .search-container { position: relative; margin-bottom: 15px; }
-        .search-box { width: 100%; background: #161622; border: 1px solid #2a2a3c; color: white; padding: 12px 12px 12px 40px; border-radius: 8px; font-size: 0.95rem; outline: none; }
-        .search-box::placeholder { color: #6b7280; }
-        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: #6b7280; pointer-events: none; }
+        .search-container { position: relative; margin-bottom: 12px; }
+        .search-box { width: 100%; background: #11111b; border: 1px solid #1f1f2e; color: white; padding: 12px 12px 12px 40px; border-radius: 8px; font-size: 0.9rem; outline: none; }
+        .search-box:focus { border-color: #6366f1; }
+        .search-box::placeholder { color: #4b5563; }
+        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; color: #4b5563; pointer-events: none; }
 
-        .timeframes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 15px; }
-        .tf-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 8px 0; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
-        .tf-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
+        .timeframes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 12px; }
+        .tf-btn { background: #11111b; border: 1px solid #1f1f2e; color: #9ca3af; padding: 8px 0; border-radius: 6px; font-size: 0.7rem; font-weight: bold; text-align: center; cursor: pointer; }
+        .tf-btn.active { background: #4f46e5; border-color: #6366f1; color: white; }
 
-        .slider-box { background: #161622; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #2a2a3c; }
+        .slider-box { background: #11111b; padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #1f1f2e; }
         input[type=range] { width: 100%; cursor: pointer; margin-top: 6px; accent-color: #6366f1; }
 
-        .card { background: #161622; border: 1px solid #2a2a3c; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
+        .card { background: #11111b; border: 1px solid #1f1f2e; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; font-size: 0.95rem; }
+        
         .price-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .price-tag { color: #38bdf8; font-size: 1rem; }
-        .var-tag { font-size: 0.85rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+        .price-tag { color: #38bdf8; font-size: 0.95rem; font-weight: 600; }
+        .var-tag { font-size: 0.8rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
         .var-pos { background: rgba(52, 211, 153, 0.15); color: #34d399; }
         .var-neg { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 
-        .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #0b0b10; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 8px; }
-        .bollinger-box { background: #12121c; padding: 8px; border-radius: 6px; font-size: 0.78rem; color: #a78bfa; margin-bottom: 8px; border: 1px dashed #2a2a3c; }
-        .market-info { font-size: 0.75rem; color: #9ca3af; display: flex; justify-content: space-between; border-top: 1px solid #2a2a3c; padding-top: 8px; }
+        .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #07070c; padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-bottom: 8px; border: 1px solid #161622; }
+        .indicator-box { background: #161622; padding: 8px; border-radius: 6px; font-size: 0.75rem; color: #c084fc; margin-bottom: 8px; border: 1px solid #22223b; display: flex; justify-content: space-between; }
+        
+        .targets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; font-size: 0.78rem; }
+        .target-tp { background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.2); padding: 6px; border-radius: 6px; color: #34d399; text-align: center; }
+        .target-sl { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 6px; border-radius: 6px; color: #ef4444; text-align: center; }
+
+        .market-info { font-size: 0.7rem; color: #6b7280; display: flex; justify-content: space-between; border-top: 1px solid #1f1f2e; padding-top: 6px; }
     </style>
 </head>
 <body>
@@ -56,10 +64,10 @@
 
     <div class="search-container">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-box" placeholder="Pesquisar (ex: BTC-USD, PETR4.SA)..." oninput="scan()">
+        <input type="text" id="searchInput" class="search-box" placeholder="Pesquisar ativo (ex: BTC-USD, PETR4.SA)..." oninput="scan()">
     </div>
 
-    <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 6px;">Timeframe:</div>
+    <div style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 4px;">Timeframe de Análise:</div>
     <div class="timeframes">
         <button class="tf-btn" onclick="setTF('1m', this)">1m</button>
         <button class="tf-btn" onclick="setTF('5m', this)">5m</button>
@@ -70,7 +78,7 @@
     </div>
 
     <div class="slider-box">
-        <label style="font-size: 0.85rem; color: #9ca3af;">Score Mínimo Raio-X: <span id="scoreVal" style="color: #fff; font-weight: bold;">0</span></label>
+        <label style="font-size: 0.8rem; color: #9ca3af;">Filtro Score Mínimo: <span id="scoreVal" style="color: #fff; font-weight: bold;">0</span></label>
         <input type="range" id="scoreRange" min="0" max="100" value="0" oninput="updateScore(this.value)">
     </div>
 
@@ -124,11 +132,14 @@
                     <div class="metrics">
                         <div>RSI (14): <b>${i.rsi}</b></div>
                         <div>Tendência: <b>${i.trend}</b></div>
-                        <div style="color: #34d399; margin-top: 4px;">TP: ${i.tp}</div>
-                        <div style="color: #ef4444; margin-top: 4px;">SL: ${i.sl}</div>
                     </div>
-                    <div class="bollinger-box">
-                        Bollinger: <b>${i.bollinger}</b>
+                    <div class="indicator-box">
+                        <span>Boll: <b>${i.bollinger}</b></span>
+                        <span>MACD: <b>${i.macd}</b></span>
+                    </div>
+                    <div class="targets-grid">
+                        <div class="target-tp">Alvo (TP): <b>${i.tp}</b></div>
+                        <div class="target-sl">Limite (SL): <b>${i.sl}</b></div>
                     </div>
                     <div class="market-info">
                         <span>Estado: <b>${i.market_status}</b></span>
