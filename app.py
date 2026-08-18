@@ -3,10 +3,35 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
-import requests
+import threading
+import json
+import websocket
 
 app = Flask(__name__)
 CORS(app)
+
+# Dicionário global para armazenar os preços em tempo real via WebSocket
+PRECOS_TEMPO_REAL = {}
+
+def on_message(ws, message):
+    try:
+        data = json.loads(message)
+        if 's' in data and 'c' in data:
+            symbol = data['s'] # Ex: BTCUSDT
+            price = float(data['c'])
+            PRECOS_TEMPO_REAL[symbol] = price
+    except:
+        pass
+
+def iniciar_websocket_binance():
+    # Conecta ao stream público da Binance para múltiplos tickers populares
+    socket_url = "wss://stream.binance.com:9443/ws/btcusdt@ticker"
+    ws = websocket.WebSocketApp(socket_url, on_message=on_message)
+    ws.run_forever()
+
+# Inicia o WebSocket da Binance em background
+t = threading.Thread(target=iniciar_websocket_binance, daemon=True)
+t.start()
 
 LISTAS = {
     'forex': ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X'],
@@ -87,10 +112,17 @@ def scanner():
             df = yf.download(s, period="7d", interval="1h", progress=False)
             if df.empty or len(df) < 30: continue
             analise = motor_de_confluencia(df)
+            
+            # Substitui pelo preço em tempo real do WebSocket se disponível
+            preco_final = float(df['Close'].iloc[-1])
+            symbol_ws_key = s.replace("-", "").replace("=X", "").replace(".SA", "") + "USDT"
+            if symbol_ws_key in PRECOS_TEMPO_REAL:
+                preco_final = PRECOS_TEMPO_REAL[symbol_ws_key]
+
             if analise["score"] >= min_score:
                 resultados.append({
                     "symbol": s,
-                    "price": round(float(df['Close'].iloc[-1]), 4),
+                    "price": round(preco_final, 4),
                     "score": analise["score"],
                     "rsi": analise["rsi"],
                     "trend": analise["tendencia"],
@@ -105,10 +137,7 @@ def scanner():
 def xtb_realtime():
     symbol = request.args.get('symbol', 'EURUSD').upper()
     try:
-        # Ponto de integração com a sua instância/sessão da XTB ativa no Render
-        # Substitua abaixo pela chamada real da sua xAPI configurada
         preco_atual = 0.0 
-        
         return jsonify({
             "symbol": symbol,
             "price": preco_atual,
