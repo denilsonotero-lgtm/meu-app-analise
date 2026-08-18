@@ -1,23 +1,40 @@
-<!-- Dentro do seu arquivo index.html, substitua o bloco das abas e os cards -->
+<!-- Substitua as Abas e os botões de Timeframe por estes: -->
+
 <div class="tabs">
-  <button class="tab-btn" onclick="carregarScanner('forex', this)">Forex</button>
-  <button class="tab-btn active" onclick="carregarScanner('crypto', this)">Crypto</button>
-  <button class="tab-btn" onclick="carregarScanner('b3', this)">B3</button>
+  <button class="tab-btn" onclick="setCategoria('forex', this)">Forex</button>
+  <button class="tab-btn active" onclick="setCategoria('crypto', this)">Crypto</button>
+  <button class="tab-btn" onclick="setCategoria('b3', this)">B3</button>
 </div>
 
-<div id="listaResultados">
-  <!-- Os 5 cartões aparecerão aqui -->
+<div class="timeframes">
+  <button class="tf-btn" onclick="setTF('1m', this)">1m</button>
+  <button class="tf-btn" onclick="setTF('5m', this)">5m</button>
+  <button class="tf-btn active" onclick="setTF('1h', this)">1h</button>
 </div>
 
 <script>
-async function carregarScanner(categoria, btn) {
+let categoriaAtual = 'crypto';
+let tfAtual = '1h';
+
+function setCategoria(cat, btn) {
+  categoriaAtual = cat;
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  
+  atualizarInterface();
+}
+
+function setTF(tf, btn) {
+  tfAtual = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  atualizarInterface();
+}
+
+async function atualizarInterface() {
   const container = document.getElementById('listaResultados');
-  container.innerHTML = '<p>Analisando mercado...</p>';
+  container.innerHTML = '<p style="text-align:center">Escaneando ativos...</p>';
   
-  const response = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${categoria}`);
+  const response = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${categoriaAtual}&timeframe=${tfAtual}`);
   const dados = await response.json();
   
   container.innerHTML = '';
@@ -25,15 +42,15 @@ async function carregarScanner(categoria, btn) {
     container.innerHTML += `
       <div class="card">
         <div class="card-header">
-          <strong>${item.symbol} • 1h</strong>
+          <strong>${item.symbol} • ${tfAtual}</strong>
           <span class="score">${item.score}/100</span>
         </div>
-        <div class="signal-type">${item.score > 50 ? 'COMPRA' : 'VENDA'}</div>
-        <button class="btn-raiox">VER RAIO-X COMPLETO →</button>
+        <div class="signal-type">${item.score >= 50 ? 'COMPRA' : 'VENDA'}</div>
       </div>
     `;
   });
 }
-// Carregar inicial
-carregarScanner('crypto', document.querySelector('.tab-btn'));
+
+// Inicializa
+atualizarInterface();
 </script>
