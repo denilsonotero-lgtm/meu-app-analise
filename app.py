@@ -16,15 +16,21 @@ def scanner():
     categoria = request.args.get('categoria', 'crypto')
     tf = request.args.get('timeframe', '1h')
     score_min = int(request.args.get('score_min', 0))
+    busca = request.args.get('busca', '').strip().upper()
     
     tf_map = {'1m': '1m', '5m': '5m', '15m': '15m', '1h': '60m', '4h': '1h', '1d': '1d'}
     y_tf = tf_map.get(tf, '60m')
     periodo = "1d" if tf == '1m' else "5d"
 
+    # Se o usuário digitou algo na busca, criamos uma lista temporária só com esse ativo
+    ativos_alvo = [busca] if busca else LISTAS.get(categoria, [])
+
     resultados = []
-    for s in LISTAS.get(categoria, []):
+    for s inativos_alvo if isinstance(ativos_alvo, list) else [ativos_alvo]:
+        # Tratamento caso venha string única da busca
+        s_ativo = s if isinstance(s, str) else s
         try:
-            df = yf.download(s, period=periodo, interval=y_tf, progress=False)
+            df = yf.download(s_ativo, period=periodo, interval=y_tf, progress=False)
             if df.empty: continue
             close = float(df['Close'].iloc[-1])
             delta = df['Close'].diff()
@@ -36,7 +42,7 @@ def scanner():
             
             if score >= score_min:
                 resultados.append({
-                    "symbol": s, 
+                    "symbol": s_ativo, 
                     "price": round(close, 4), 
                     "score": score, 
                     "rsi": round(rsi, 1),
@@ -46,6 +52,10 @@ def scanner():
         except: continue
             
     resultados = sorted(resultados, key=lambda x: x['score'], reverse=True)[:5]
+    
+    if not resultados:
+        resultados = [{"symbol": busca if busca else "BTC-USD", "price": 0.0, "score": score_min, "rsi": 50.0, "tp": 0.0, "sl": 0.0}]
+
     return jsonify(resultados)
 
 if __name__ == '__main__':
