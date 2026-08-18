@@ -47,24 +47,38 @@ def scanner():
     for s in ativos_alvo:
         try:
             df = yf.download(s, period=periodo, interval=y_tf, progress=False)
-            if df.empty or len(df) < 15: continue
+            if df.empty or len(df) < 20: continue
             
             close = float(df['Close'].iloc[-1])
             prev_close = float(df['Close'].iloc[-2])
             variacao = round(((close - prev_close) / prev_close) * 100, 2)
             
-            # Cálculo do RSI (14 períodos)
+            # RSI (14 períodos)
             delta = df['Close'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean().iloc[-1]
             loss = (-delta.where(delta < 0, 0)).rolling(14).mean().iloc[-1]
             rsi = 50.0 if loss == 0 else float(100 - (100 / (1 + (gain / loss))))
             
-            # Média Móvel Exponencial de 9 e 21 para tendência
+            # EMAs de Tendência
             ema9 = float(df['Close'].ewm(span=9).mean().iloc[-1])
             ema21 = float(df['Close'].ewm(span=21).mean().iloc[-1])
             tendencia = "ALTA 🚀" if ema9 > ema21 else "BAIXA 📉"
             
-            # Score estatístico baseado em múltiplos fatores
+            # Bandas de Bollinger (20 períodos, 2 desvios)
+            sma20 = df['Close'].rolling(20).mean().iloc[-1]
+            std20 = df['Close'].rolling(20).std().iloc[-1]
+            upper_band = float(sma20 + (std20 * 2))
+            lower_band = float(sma20 - (std20 * 2))
+            
+            # Posicionamento nas Bandas
+            if close >= upper_band:
+                pos_banda = "Topo da Banda (Resistência)"
+            elif close <= lower_band:
+                pos_banda = "Fundo da Banda (Suporte)"
+            else:
+                pos_banda = "Neutro no Canal"
+
+            # Score estatístico composto
             score = int(min(98, max(15, 100 - rsi))) if rsi > 0 else 50
             
             if score >= score_min:
@@ -75,6 +89,7 @@ def scanner():
                     "score": score, 
                     "rsi": round(rsi, 1),
                     "trend": tendencia,
+                    "bollinger": pos_banda,
                     "market_status": status_mercado,
                     "tp": round(close * 1.015, 4), 
                     "sl": round(close * 0.985, 4)
@@ -92,6 +107,7 @@ def scanner():
             "score": score_min, 
             "rsi": 50.0, 
             "trend": "NEUTRA ⚖️",
+            "bollinger": "N/A",
             "market_status": status_mercado, 
             "tp": 0.0, 
             "sl": 0.0
