@@ -9,14 +9,13 @@
         body { background: #0b0b10; color: #fff; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 480px; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .title { font-size: 1.1rem; font-weight: bold; }
+        .title { font-size: 1.1rem; font-weight: bold; letter-spacing: 0.5px; }
         .live-badge { background: #2e1065; color: #a78bfa; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; border: 1px solid #7c3aed; }
 
         .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px; }
         .tab-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
         .tab-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
 
-        /* Barra de Pesquisa Restaurada */
         .search-box { width: 100%; background: #161622; border: 1px solid #2a2a3c; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; outline: none; }
         .search-box::placeholder { color: #6b7280; }
 
@@ -25,9 +24,9 @@
         .tf-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
 
         .slider-box { background: #161622; padding: 12px 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #2a2a3c; }
-        input[type=range] { width: 100%; cursor: pointer; margin-top: 6px; }
+        input[type=range] { width: 100%; cursor: pointer; margin-top: 6px; accent-color: #6366f1; }
 
-        .card { background: #161622; border: 1px solid #2a2a3c; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .card { background: #161622; border: 1px solid #2a2a3c; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
         .price-tag { color: #38bdf8; font-size: 0.95rem; margin-bottom: 10px; }
         .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #0b0b10; padding: 10px; border-radius: 6px; font-size: 0.85rem; }
@@ -47,8 +46,8 @@
         <button class="tab-btn" onclick="setCat('b3', this)">B3</button>
     </div>
 
-    <!-- Barra de Pesquisa de Ativos -->
-    <input type="text" id="searchInput" class="search-box" placeholder="Pesquisar ativo (ex: BTC-USD, PETR4.SA)..." oninput="scan()">
+    <!-- Barra de Pesquisa -->
+    <input type="text" id="searchInput" class="search-box" placeholder="Pesquisar (ex: BTC-USD, PETR4.SA)..." oninput="scan()">
 
     <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 6px;">Timeframe:</div>
     <div class="timeframes">
@@ -66,7 +65,7 @@
         <input type="range" id="scoreRange" min="0" max="100" value="0" oninput="updateScore(this.value)">
     </div>
 
-    <!-- Container dos Cards do Top 5 -->
+    <!-- Container do Ranking -->
     <div id="cardsContainer"></div>
 </div>
 
@@ -94,9 +93,11 @@
     }
 
     async function scan() {
+        const urlServidor = 'https://meu-app-analise.onrender.com';
         const busca = document.getElementById('searchInput').value;
+        
         try {
-            let res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${cat}&timeframe=${tf}&score_min=${scoreMin}&busca=${encodeURIComponent(busca)}`);
+            let res = await fetch(`${urlServidor}/api/scanner?categoria=${cat}&timeframe=${tf}&score_min=${scoreMin}&busca=${encodeURIComponent(busca)}`);
             let data = await res.json();
             
             document.getElementById('cardsContainer').innerHTML = data.map((i, index) => `
@@ -113,10 +114,12 @@
                         <div style="color: #ef4444; margin-top: 4px;">SL: ${i.sl}</div>
                     </div>
                 </div>`).join('');
-        } catch(e) {}
+        } catch(e) {
+            console.error(e);
+        }
     }
 
-    // Atualização automática a cada 5 segundos
+    // Loop de atualização automática a cada 5 segundos
     setInterval(scan, 5000);
     scan();
 </script>
