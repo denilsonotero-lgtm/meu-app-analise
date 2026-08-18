@@ -76,10 +76,10 @@ def motor_de_confluencia(df, symbol):
         "fib_relevante": round(float(fibs['fib_618']), 2),
         "amostras_hist": amostras
     }
-
 @app.route('/')
 def home():
-    return render_template('index.html')
+    return "API do Quantum Dopm Pro está online e funcionando!"
+
 
 @app.route('/api/scanner', methods=['GET'])
 def scanner():
