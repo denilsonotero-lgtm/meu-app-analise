@@ -5,180 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantium DOPM Pro</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-        body { background-color: #0b0b10; color: #ffffff; padding: 15px; display: flex; justify-content: center; }
+        body { background: #0b0b10; color: #fff; font-family: sans-serif; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 480px; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .title { font-size: 1.1rem; font-weight: bold; letter-spacing: 0.5px; }
-        .live-badge { background: #2e1065; color: #a78bfa; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; border: 1px solid #7c3aed; }
-
-        .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 15px; }
-        .tab-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
-        .tab-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
-
-        .symbol-select { background: #161622; border: 1px solid #2a2a3c; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; font-weight: bold; }
-
-        .label { font-size: 0.8rem; color: #9ca3af; margin-bottom: 6px; }
-        
-        .timeframes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 15px; }
-        .tf-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 8px 0; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
-        .tf-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
-
-        .config-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #161622; padding: 10px 12px; border-radius: 8px; border: 1px solid #2a2a3c; }
-        .auto-select { background: #0b0b10; color: white; border: 1px solid #2a2a3c; padding: 6px; border-radius: 6px; font-size: 0.8rem; }
-
-        .scan-btn { width: 100%; background: #6366f1; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
-
+        .slider-box { background: #161622; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #2a2a3c; }
+        input[type=range] { width: 100%; cursor: pointer; }
+        .tabs, .timeframes { display: grid; gap: 6px; margin-bottom: 15px; }
+        .tabs { grid-template-columns: 1fr 1fr 1fr; }
+        .timeframes { grid-template-columns: repeat(6, 1fr); }
+        .btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
+        .btn.active { background: #6366f1; border-color: #818cf8; color: white; }
         .card { background: #161622; border: 1px solid #2a2a3c; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .card-title { font-size: 1rem; font-weight: bold; }
-        .score-badge { background: #064e3b; color: #34d399; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; }
-        
-        .status-msg { font-weight: bold; margin-bottom: 12px; font-size: 0.9rem; }
-
-        .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #0b0b10; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.85rem; }
-        .metric-item { color: #9ca3af; margin-bottom: 4px; }
-        .metric-val { color: white; font-weight: bold; }
-
-        .raio-x-btn { width: 100%; background: #2a2a3c; color: #a78bfa; border: 1px solid #4f46e5; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 0.85rem; cursor: pointer; text-align: center; }
     </style>
 </head>
 <body>
-
 <div class="container">
-    <div class="header">
-        <div class="title">QUANTIUM DOPM PRO</div>
-        <div class="live-badge">LIVE ⚡</div>
-    </div>
-
-    <!-- Abas de Categorias -->
+    <h3>QUANTIUM DOPM PRO</h3>
     <div class="tabs">
-        <button class="tab-btn" onclick="setCategoria('forex', this)">Forex & Índices</button>
-        <button class="tab-btn active" onclick="setCategoria('crypto', this)">Criptomoedas</button>
-        <button class="tab-btn" onclick="setCategoria('b3', this)">B3 (Brasil)</button>
+        <button class="btn" onclick="setCat('forex', this)">Forex</button>
+        <button class="btn active" onclick="setCat('crypto', this)">Crypto</button>
+        <button class="btn" onclick="setCat('b3', this)">B3</button>
     </div>
-
-    <!-- Ativo Principal -->
-    <div id="symbolDisplay" class="symbol-select">BTC-USD</div>
-
-    <div class="label">Timeframe:</div>
-    <!-- Timeframes incluindo 1m -->
     <div class="timeframes">
-        <button class="tf-btn" onclick="setTF('1m', this)">1m</button>
-        <button class="tf-btn" onclick="setTF('5m', this)">5m</button>
-        <button class="tf-btn" onclick="setTF('15m', this)">15m</button>
-        <button class="tf-btn active" onclick="setTF('1h', this)">1h</button>
-        <button class="tf-btn" onclick="setTF('4h', this)">4h</button>
-        <button class="tf-btn" onclick="setTF('1d', this)">1d</button>
+        <button class="btn" onclick="setTF('1m', this)">1m</button>
+        <button class="btn active" onclick="setTF('1h', this)">1h</button>
     </div>
-
-    <div class="config-row">
-        <span style="font-size: 0.85rem; color: #9ca3af;">Atualização Automática:</span>
-        <select class="auto-select">
-            <option>Desativado</option>
-            <option>1 Minuto</option>
-            <option>5 Minutos</option>
-        </select>
+    <div class="slider-box">
+        <label>Score Mínimo: <span id="scoreVal">0</span></label>
+        <input type="range" id="scoreRange" min="0" max="100" value="0" oninput="updateScore(this.value)">
     </div>
-
-    <button class="scan-btn" onclick="executarScan()">ESCANEAR MERCADO</button>
-
-    <div id="resultadoContainer">
-        <div class="card">
-            <div class="card-header">
-                <div id="cardSymbol" class="card-title">BTC-USD • 1h</div>
-                <div id="cardScore" class="score-badge">--/100</div>
-            </div>
-            
-            <div id="cardStatus" class="status-msg" style="color: #a78bfa;">PRONTO PARA ESCANEAR</div>
-
-            <div class="metrics-grid">
-                <div>
-                    <div class="metric-item">Probabilidade:</div>
-                    <div id="valProb" class="metric-val">--%</div>
-                    <div class="metric-item" style="margin-top: 8px;">Take Profit:</div>
-                    <div id="valTP" class="metric-val" style="color: #34d399;">--</div>
-                </div>
-                <div>
-                    <div class="metric-item">RSI (14):</div>
-                    <div id="valRSI" class="metric-val">--</div>
-                    <div class="metric-item" style="margin-top: 8px;">Stop Loss:</div>
-                    <div id="valSL" class="metric-val" style="color: #ef4444;">--</div>
-                </div>
-            </div>
-
-            <button class="raio-x-btn">VER RAIO-X COMPLETO →</button>
-        </div>
-    </div>
+    <div id="cardsContainer"></div>
 </div>
 
 <script>
-    let categoriaAtual = 'crypto';
-    let tfAtual = '1h';
-    let ativoAtual = 'BTC-USD';
+    let cat = 'crypto', tf = '1h', scoreMin = 0;
 
-    const ativosPorCat = {
-        'crypto': 'BTC-USD',
-        'forex': 'EURUSD=X',
-        'b3': 'PETR4.SA'
-    };
+    function setCat(c, btn) { cat = c; document.querySelectorAll('.tabs .btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+    function setTF(t, btn) { tf = t; document.querySelectorAll('.timeframes .btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+    function updateScore(val) { scoreMin = val; document.getElementById('scoreVal').innerText = val; }
 
-    function setCategoria(cat, btn) {
-        categoriaAtual = cat;
-        ativoAtual = ativosPorCat[cat];
-        document.getElementById('symbolDisplay').innerText = ativoAtual;
-        
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        executarScan(); // Atualiza instantaneamente ao mudar categoria
-    }
-
-    function setTF(tf, btn) {
-        tfAtual = tf;
-        document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        executarScan(); // Atualiza instantaneamente ao mudar o timeframe (incluindo 1m)
-    }
-
-    async function executarScan() {
-        const urlServidor = 'https://meu-app-analise.onrender.com';
-        document.getElementById('cardSymbol').innerText = `${ativoAtual} • ${tfAtual}`;
-        document.getElementById('cardStatus').innerText = 'ANALISANDO...';
-        document.getElementById('cardStatus').style.color = '#a78bfa';
-
+    async function scan() {
         try {
-            let resposta = await fetch(`${urlServidor}/api/scanner?categoria=${categoriaAtual}&timeframe=${tfAtual}`);
-            if (!resposta.ok) throw new Error('Erro de conexão');
-            
-            let dados = await resposta.json();
-            let item = dados.find(x => x.symbol === ativoAtual) || dados[0];
-
-            if (item) {
-                let statusTexto = item.score >= 50 ? 'SINAL DE COMPRA CONFIRMADO' : 'SINAL DE VENDA IDENTIFICADO';
-                let corStatus = item.score >= 50 ? '#34d399' : '#ef4444';
-                
-                document.getElementById('cardStatus').innerText = statusTexto;
-                document.getElementById('cardStatus').style.color = corStatus;
-                document.getElementById('cardScore').innerText = `${item.score}/100`;
-                document.getElementById('valProb').innerText = `${item.score}%`;
-                document.getElementById('valRSI').innerText = item.rsi;
-                document.getElementById('valTP').innerText = item.tp;
-                document.getElementById('valSL').innerText = item.sl;
-            }
-        } catch(e) {
-            document.getElementById('cardStatus').innerText = 'ERRO DE CONEXÃO';
-            document.getElementById('cardStatus').style.color = '#ef4444';
-            document.getElementById('cardScore').innerText = '--/100';
-            document.getElementById('valProb').innerText = '--%';
-            document.getElementById('valRSI').innerText = '--';
-            document.getElementById('valTP').innerText = '--';
-            document.getElementById('valSL').innerText = '--';
-        }
+            let res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${cat}&timeframe=${tf}&score_min=${scoreMin}`);
+            let data = await res.json();
+            document.getElementById('cardsContainer').innerHTML = data.map(i => `
+                <div class="card">
+                    <div>${i.symbol} | Score: ${i.score} | RSI: ${i.rsi}</div>
+                    <div style="color:#34d399">TP: ${i.tp}</div>
+                    <div style="color:#ef4444">SL: ${i.sl}</div>
+                </div>`).join('');
+        } catch(e) {}
     }
 
-    // Executa assim que o app abre
-    executarScan();
+    // Loop de 5 em 5 segundos
+    setInterval(scan, 5000);
+    scan();
 </script>
 </body>
 </html>
