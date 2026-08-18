@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -99,6 +100,22 @@ def scanner():
         except: continue
     resultados = sorted(resultados, key=lambda x: x['score'], reverse=True)[:5]
     return jsonify(resultados)
+
+@app.route('/api/xtb-realtime', methods=['GET'])
+def xtb_realtime():
+    symbol = request.args.get('symbol', 'EURUSD').upper()
+    try:
+        # Ponto de integração com a sua instância/sessão da XTB ativa no Render
+        # Substitua abaixo pela chamada real da sua xAPI configurada
+        preco_atual = 0.0 
+        
+        return jsonify({
+            "symbol": symbol,
+            "price": preco_atual,
+            "status": "success"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e), "status": "error"}), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
