@@ -24,16 +24,16 @@ def scanner():
             if df.empty: continue
             
             close = float(df['Close'].iloc[-1])
-            # RSI simples para performance
             delta = df['Close'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean().iloc[-1]
             loss = (-delta.where(delta < 0, 0)).rolling(14).mean().iloc[-1]
             rsi = 50 if loss == 0 else 100 - (100 / (1 + (gain / loss)))
             
             score = 80 if rsi < 35 else (20 if rsi > 65 else 50)
-            resultados.append({"symbol": s, "score": score})
-        except: continue
-        
+            resultados.append({"symbol": s, "score": int(score)})
+        except Exception as e:
+            continue
+            
     return jsonify(sorted(resultados, key=lambda x: x['score'], reverse=True))
 
 if __name__ == '__main__':
