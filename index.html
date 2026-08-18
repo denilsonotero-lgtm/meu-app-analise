@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantium DOPM Pro</title>
+    <title>Quantium DOPM Pro - Raio-X & Scanner</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
         body { background: #0b0b10; color: #fff; padding: 15px; display: flex; justify-content: center; }
@@ -16,8 +16,10 @@
         .tab-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
         .tab-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
 
-        .search-box { width: 100%; background: #161622; border: 1px solid #2a2a3c; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 0.95rem; outline: none; }
+        .search-container { position: relative; margin-bottom: 15px; }
+        .search-box { width: 100%; background: #161622; border: 1px solid #2a2a3c; color: white; padding: 12px 12px 12px 40px; border-radius: 8px; font-size: 0.95rem; outline: none; }
         .search-box::placeholder { color: #6b7280; }
+        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: #6b7280; pointer-events: none; }
 
         .timeframes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-bottom: 15px; }
         .tf-btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 8px 0; border-radius: 6px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
@@ -28,26 +30,33 @@
 
         .card { background: #161622; border: 1px solid #2a2a3c; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
-        .price-tag { color: #38bdf8; font-size: 0.95rem; margin-bottom: 10px; }
-        .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #0b0b10; padding: 10px; border-radius: 6px; font-size: 0.85rem; }
+        .price-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .price-tag { color: #38bdf8; font-size: 1rem; }
+        .var-tag { font-size: 0.85rem; font-weight: bold; padding: 2px 6px; border-radius: 4px; }
+        .var-pos { background: rgba(52, 211, 153, 0.15); color: #34d399; }
+        .var-neg { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #0b0b10; padding: 10px; border-radius: 6px; font-size: 0.85rem; margin-bottom: 8px; }
+        .market-info { font-size: 0.75rem; color: #9ca3af; display: flex; justify-content: space-between; border-top: 1px solid #2a2a3c; padding-top: 8px; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <div class="title">QUANTIUM DOPM PRO</div>
-        <div class="live-badge">LIVE ⚡</div>
+        <div class="live-badge">RAIO-X ⚡</div>
     </div>
 
-    <!-- Abas de Categorias -->
     <div class="tabs">
         <button class="tab-btn" onclick="setCat('forex', this)">Forex</button>
         <button class="tab-btn active" onclick="setCat('crypto', this)">Crypto</button>
         <button class="tab-btn" onclick="setCat('b3', this)">B3</button>
     </div>
 
-    <!-- Barra de Pesquisa -->
-    <input type="text" id="searchInput" class="search-box" placeholder="Pesquisar (ex: BTC-USD, PETR4.SA)..." oninput="scan()">
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-box" placeholder="Pesquisar (ex: BTC-USD, PETR4.SA)..." oninput="scan()">
+    </div>
 
     <div style="font-size: 0.8rem; color: #9ca3af; margin-bottom: 6px;">Timeframe:</div>
     <div class="timeframes">
@@ -59,13 +68,11 @@
         <button class="tf-btn" onclick="setTF('1d', this)">1d</button>
     </div>
 
-    <!-- Slider de Score Mínimo -->
     <div class="slider-box">
-        <label style="font-size: 0.85rem; color: #9ca3af;">Score Mínimo: <span id="scoreVal" style="color: #fff; font-weight: bold;">0</span></label>
+        <label style="font-size: 0.85rem; color: #9ca3af;">Score Mínimo Raio-X: <span id="scoreVal" style="color: #fff; font-weight: bold;">0</span></label>
         <input type="range" id="scoreRange" min="0" max="100" value="0" oninput="updateScore(this.value)">
     </div>
 
-    <!-- Container do Ranking -->
     <div id="cardsContainer"></div>
 </div>
 
@@ -100,26 +107,36 @@
             let res = await fetch(`${urlServidor}/api/scanner?categoria=${cat}&timeframe=${tf}&score_min=${scoreMin}&busca=${encodeURIComponent(busca)}`);
             let data = await res.json();
             
-            document.getElementById('cardsContainer').innerHTML = data.map((i, index) => `
+            document.getElementById('cardsContainer').innerHTML = data.map((i, index) => {
+                const varClass = i.variation >= 0 ? 'var-pos' : 'var-neg';
+                const varPrefix = i.variation >= 0 ? '+' : '';
+                return `
                 <div class="card">
                     <div class="card-header">
                         <span>#${index + 1} - ${i.symbol}</span>
                         <span style="color: #34d399;">Score: ${i.score}</span>
                     </div>
-                    <div class="price-tag">Preço Atual: <b>${i.price}</b></div>
+                    <div class="price-row">
+                        <span class="price-tag">Preço: <b>${i.price}</b></span>
+                        <span class="var-tag ${varClass}">${varPrefix}${i.variation}%</span>
+                    </div>
                     <div class="metrics">
                         <div>RSI (14): <b>${i.rsi}</b></div>
-                        <div>Prob: <b>${i.score}%</b></div>
+                        <div>Tendência: <b>${i.trend}</b></div>
                         <div style="color: #34d399; margin-top: 4px;">TP: ${i.tp}</div>
                         <div style="color: #ef4444; margin-top: 4px;">SL: ${i.sl}</div>
                     </div>
-                </div>`).join('');
+                    <div class="market-info">
+                        <span>Estado: <b>${i.market_status}</b></span>
+                        <span>TF: ${tf.toUpperCase()}</span>
+                    </div>
+                </div>`;
+            }).join('');
         } catch(e) {
             console.error(e);
         }
     }
 
-    // Loop de atualização automática a cada 5 segundos
     setInterval(scan, 5000);
     scan();
 </script>
