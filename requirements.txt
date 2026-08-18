@@ -1,8 +1,6 @@
 flask
 flask-cors
-websocket-client
 gunicorn
 requests
 yfinance
 pandas
-pandas-ta
