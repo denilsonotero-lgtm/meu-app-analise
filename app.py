@@ -22,16 +22,15 @@ def scanner():
     y_tf = tf_map.get(tf, '60m')
     periodo = "1d" if tf == '1m' else "5d"
 
-    # Se o usuário digitou algo na busca, criamos uma lista temporária só com esse ativo
+    # Define se busca um ativo específico ou a lista completa da categoria
     ativos_alvo = [busca] if busca else LISTAS.get(categoria, [])
 
     resultados = []
-    for s inativos_alvo if isinstance(ativos_alvo, list) else [ativos_alvo]:
-        # Tratamento caso venha string única da busca
-        s_ativo = s if isinstance(s, str) else s
+    for s in ativos_alvo:
         try:
-            df = yf.download(s_ativo, period=periodo, interval=y_tf, progress=False)
+            df = yf.download(s, period=periodo, interval=y_tf, progress=False)
             if df.empty: continue
+            
             close = float(df['Close'].iloc[-1])
             delta = df['Close'].diff()
             gain = (delta.where(delta > 0, 0)).rolling(14).mean().iloc[-1]
@@ -42,15 +41,17 @@ def scanner():
             
             if score >= score_min:
                 resultados.append({
-                    "symbol": s_ativo, 
+                    "symbol": s, 
                     "price": round(close, 4), 
                     "score": score, 
                     "rsi": round(rsi, 1),
                     "tp": round(close * 1.015, 4), 
                     "sl": round(close * 0.985, 4)
                 })
-        except: continue
+        except:
+            continue
             
+    # Ordena do melhor score para o pior e retorna os top 5
     resultados = sorted(resultados, key=lambda x: x['score'], reverse=True)[:5]
     
     if not resultados:
