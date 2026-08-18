@@ -3,47 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantium DOPM Pro</title>
+    <title>Quantium DOPM Pro - Terminal de Elite</title>
     <style>
         :root { --bg: #07070c; --card: #11111b; --accent: #6366f1; --text: #f3f4f6; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; padding: 20px; }
-        .container { max-width: 500px; margin: auto; }
-        .card { background: var(--card); padding: 15px; border-radius: 12px; margin-bottom: 10px; border: 1px solid #1f1f2e; }
-        .search-btn { background: var(--accent); color: white; padding: 10px; border-radius: 8px; border: none; width: 100%; cursor: pointer; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); padding: 12px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; background: var(--card); padding: 12px 15px; border-radius: 12px; border: 1px solid #1f1f2e; }
+        .title { font-size: 1rem; font-weight: 800; color: #818cf8; }
+        .live-badge { background: rgba(124, 58, 237, 0.15); color: #c084fc; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; border: 1px solid rgba(124, 58, 237, 0.4); }
+        .tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+        .tab-btn { background: var(--card); border: 1px solid #1f1f2e; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
+        .tab-btn.active { background: #6366f1; border-color: #818cf8; color: white; }
+        .search-container { position: relative; margin-bottom: 12px; display: flex; gap: 6px; }
+        .search-box { width: 100%; background: var(--card); border: 1px solid #1f1f2e; color: white; padding: 12px 12px 12px 40px; border-radius: 8px; font-size: 0.9rem; outline: none; }
+        .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #4b5563; }
+        .search-btn { background: var(--accent); border: none; color: white; padding: 0 16px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .slider-box { background: var(--card); padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #1f1f2e; }
+        input[type=range] { width: 100%; cursor: pointer; margin-top: 6px; accent-color: #6366f1; }
+        .card { background: var(--card); border: 1px solid #1f1f2e; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        .loading { text-align: center; color: var(--accent); font-weight: bold; padding: 20px; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>Quantium Raio-X ⚡</h1>
-    <input type="text" id="searchInput" placeholder="Ex: BTC-USD" style="width:100%; padding:10px; border-radius:8px; background:#11111b; color:#fff; border:1px solid #1f1f2e;">
-    <button class="search-btn" onclick="scan()" style="margin-top:10px;">Buscar / Rankear</button>
-    <div id="cardsContainer" style="margin-top:20px;"></div>
+    <div class="header">
+        <div class="title">QUANTIUM DOPM PRO</div>
+        <div class="live-badge">RAIO-X ⚡</div>
+    </div>
+    <div class="tabs">
+        <button class="tab-btn" onclick="setCat('forex', this)">Forex</button>
+        <button class="tab-btn active" onclick="setCat('crypto', this)">Crypto</button>
+        <button class="tab-btn" onclick="setCat('b3', this)">B3</button>
+    </div>
+    <div class="search-container">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-box" placeholder="Ex: BTC, EURUSD, PETR4...">
+        <button class="search-btn" onclick="scan()">Buscar</button>
+    </div>
+    <div class="slider-box">
+        <label style="font-size: 0.8rem; color: #9ca3af;">Filtro Score Mínimo: <span id="scoreVal" style="color: #fff; font-weight: bold;">0</span></label>
+        <input type="range" id="scoreRange" min="0" max="100" value="0" oninput="updateScore(this.value)">
+    </div>
+    <div id="cardsContainer"></div>
 </div>
 <script>
+    let cat = 'crypto', scoreMin = 0;
+    function setCat(c, btn) {
+        cat = c;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        scan();
+    }
+    function updateScore(val) {
+        scoreMin = val;
+        document.getElementById('scoreVal').innerText = val;
+        scan();
+    }
     async function scan() {
         const area = document.getElementById('cardsContainer');
-        const q = document.getElementById('searchInput').value.trim().toUpperCase();
-        area.innerHTML = '<p style="color:#6366f1;">Processando análise...</p>';
+        let busca = document.getElementById('searchInput').value.trim();
+        if (cat === 'forex' && busca && !busca.includes('=')) {
+            busca = busca.toUpperCase() + '=X';
+        } else if (cat === 'crypto' && busca && !busca.includes('-')) {
+            busca = busca.toUpperCase() + '-USD';
+        } else if (cat === 'b3' && busca && !busca.includes('.')) {
+            busca = busca.toUpperCase() + '.SA';
+        }
+        area.innerHTML = '<div class="loading">Analisando confluências...</div>';
         try {
-            const res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?busca=${q}`);
-            const data = await res.json();
-            
-            if(!data || data.length === 0) {
-                area.innerHTML = '<p style="color:#ef4444;">Nenhum ativo encontrado.</p>';
+            let res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${cat}&score_min=${scoreMin}&busca=${encodeURIComponent(busca)}`);
+            let data = await res.json();
+            if (!data || data.length === 0) {
+                area.innerHTML = '<p style="text-align:center; color:#ef4444; padding:20px;">Nenhum ativo encontrado.</p>';
                 return;
             }
-
-            area.innerHTML = data.map(i => `
+            area.innerHTML = data.map((i, index) => `
                 <div class="card">
-                    <h3>${i.symbol} | Score: ${i.score}</h3>
-                    <p>Preço: ${i.price} | RSI: ${i.rsi}</p>
-                    <p>Tendência: ${i.trend}</p>
-                    <p>Candle: ${i.candle}</p>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 8px;">
+                        <span>#${index + 1} - ${i.symbol}</span>
+                        <span style="color: #34d399;">Score: ${i.score}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem;">
+                        <span style="color: #38bdf8;">Preço: <b>${i.price}</b></span>
+                        <span style="color: #c084fc;">RSI: <b>${i.rsi}</b></span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #c084fc; margin-bottom: 6px;">
+                        Tendência: <b>${i.trend}</b>
+                    </div>
+                    <div style="font-size: 0.75rem; color: #9ca3af; display: flex; justify-content: space-between; border-top: 1px solid #1f1f2e; padding-top: 6px;">
+                        <span>Candle: ${i.candle}</span>
+                        <span>Fib: ${i.fib}</span>
+                    </div>
                 </div>`).join('');
-        } catch(e) { 
-            area.innerHTML = '<p style="color:#ef4444;">Erro de conexão com o servidor.</p>'; 
+        } catch(e) {
+            area.innerHTML = '<p style="text-align:center; color:#ef4444; padding:20px;">Erro de conexão com o servidor.</p>';
         }
     }
+    scan();
 </script>
 </body>
 </html>
