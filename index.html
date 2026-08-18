@@ -5,21 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantium DOPM Pro</title>
     <style>
-        body { background: #0b0b10; color: #fff; font-family: sans-serif; padding: 15px; display: flex; justify-content: center; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+        body { background: #0b0b10; color: #fff; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 480px; }
         .slider-box { background: #161622; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #2a2a3c; }
         input[type=range] { width: 100%; cursor: pointer; }
         .tabs, .timeframes { display: grid; gap: 6px; margin-bottom: 15px; }
         .tabs { grid-template-columns: 1fr 1fr 1fr; }
         .timeframes { grid-template-columns: repeat(6, 1fr); }
-        .btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; cursor: pointer; }
+        .btn { background: #161622; border: 1px solid #2a2a3c; color: #9ca3af; padding: 10px 4px; border-radius: 8px; font-size: 0.75rem; font-weight: bold; text-align: center; cursor: pointer; }
         .btn.active { background: #6366f1; border-color: #818cf8; color: white; }
         .card { background: #161622; border: 1px solid #2a2a3c; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: bold; }
+        .price-tag { color: #38bdf8; font-size: 0.95rem; margin-bottom: 10px; }
+        .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #0b0b10; padding: 10px; border-radius: 6px; font-size: 0.85rem; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h3>QUANTIUM DOPM PRO</h3>
+    <h3 style="margin-bottom: 15px;">QUANTIUM DOPM PRO</h3>
     <div class="tabs">
         <button class="btn" onclick="setCat('forex', this)">Forex</button>
         <button class="btn active" onclick="setCat('crypto', this)">Crypto</button>
@@ -27,10 +31,14 @@
     </div>
     <div class="timeframes">
         <button class="btn" onclick="setTF('1m', this)">1m</button>
+        <button class="btn" onclick="setTF('5m', this)">5m</button>
+        <button class="btn" onclick="setTF('15m', this)">15m</button>
         <button class="btn active" onclick="setTF('1h', this)">1h</button>
+        <button class="btn" onclick="setTF('4h', this)">4h</button>
+        <button class="btn" onclick="setTF('1d', this)">1d</button>
     </div>
     <div class="slider-box">
-        <label>Score Mínimo: <span id="scoreVal">0</span></label>
+        <label style="font-size: 0.85rem; color: #9ca3af;">Score Mínimo: <span id="scoreVal" style="color: #fff; font-weight: bold;">0</span></label>
         <input type="range" id="scoreRange" min="0" max="100" value="0" oninput="updateScore(this.value)">
     </div>
     <div id="cardsContainer"></div>
@@ -39,24 +47,33 @@
 <script>
     let cat = 'crypto', tf = '1h', scoreMin = 0;
 
-    function setCat(c, btn) { cat = c; document.querySelectorAll('.tabs .btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-    function setTF(t, btn) { tf = t; document.querySelectorAll('.timeframes .btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-    function updateScore(val) { scoreMin = val; document.getElementById('scoreVal').innerText = val; }
+    function setCat(c, btn) { cat = c; document.querySelectorAll('.tabs .btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); scan(); }
+    function setTF(t, btn) { tf = t; document.querySelectorAll('.timeframes .btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); scan(); }
+    function updateScore(val) { scoreMin = val; document.getElementById('scoreVal').innerText = val; scan(); }
 
     async function scan() {
         try {
             let res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${cat}&timeframe=${tf}&score_min=${scoreMin}`);
             let data = await res.json();
+            
             document.getElementById('cardsContainer').innerHTML = data.map(i => `
                 <div class="card">
-                    <div>${i.symbol} | Score: ${i.score} | RSI: ${i.rsi}</div>
-                    <div style="color:#34d399">TP: ${i.tp}</div>
-                    <div style="color:#ef4444">SL: ${i.sl}</div>
+                    <div class="card-header">
+                        <span>${i.symbol}</span>
+                        <span style="color: #34d399;">Score: ${i.score}</span>
+                    </div>
+                    <div class="price-tag">Preço Atual: <b>${i.price}</b></div>
+                    <div class="metrics">
+                        <div>RSI (14): <b>${i.rsi}</b></div>
+                        <div>Prob: <b>${i.score}%</b></div>
+                        <div style="color: #34d399; margin-top: 4px;">TP: ${i.tp}</div>
+                        <div style="color: #ef4444; margin-top: 4px;">SL: ${i.sl}</div>
+                    </div>
                 </div>`).join('');
         } catch(e) {}
     }
 
-    // Loop de 5 em 5 segundos
+    // Atualização automática a cada 5 segundos
     setInterval(scan, 5000);
     scan();
 </script>
