@@ -15,30 +15,26 @@ LISTAS = {
 def scanner():
     categoria = request.args.get('categoria', 'crypto')
     tf = request.args.get('timeframe', '1h')
-    
-    # Mapeamento do yfinance
     y_tf = '60m' if tf == '1h' else tf
     
     resultados = []
     for s in LISTAS.get(categoria, []):
         try:
-            # Pega apenas os últimos 20 candles para ser super rápido
-            df = yf.download(s, period="5d", interval=y_tf, progress=False)
+            df = yf.download(s, period="2d", interval=y_tf, progress=False)
             if df.empty: continue
             
-            # Cálculo de RSI simplificado
+            close = float(df['Close'].iloc[-1])
+            # RSI simples para performance
             delta = df['Close'].diff()
-            gain = (delta.where(delta > 0, 0)).rolling(14).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-            rs = gain / loss
-            rsi = 100 - (100 / (1 + rs.iloc[-1]))
+            gain = (delta.where(delta > 0, 0)).rolling(14).mean().iloc[-1]
+            loss = (-delta.where(delta < 0, 0)).rolling(14).mean().iloc[-1]
+            rsi = 50 if loss == 0 else 100 - (100 / (1 + (gain / loss)))
             
-            # Score fake mas rápido pra teste
-            score = 60 if rsi < 40 else 40
-            resultados.append({"symbol": s, "score": int(score)})
+            score = 80 if rsi < 35 else (20 if rsi > 65 else 50)
+            resultados.append({"symbol": s, "score": score})
         except: continue
         
     return jsonify(sorted(resultados, key=lambda x: x['score'], reverse=True))
 
 if __name__ == '__main__':
-    app.run(port=5000)
+    app.run(host='0.0.0.0', port=5000)
