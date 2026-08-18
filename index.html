@@ -6,7 +6,8 @@
     <title>Quantium DOPM Pro</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-        body { background-color: #0f0f13; color: white; padding: 15px; }
+        body { background-color: #0f0f13; color: white; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 480px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
         button { background: #1e1e2a; border: 1px solid #312e81; color: white; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
         button.active { background: #6366f1; border-color: #6366f1; }
@@ -17,6 +18,7 @@
 </head>
 <body>
 
+<div class="container">
     <div class="grid">
         <button onclick="setCat('forex', this)">Forex</button>
         <button class="active" onclick="setCat('crypto', this)">Crypto</button>
@@ -29,65 +31,65 @@
         <button class="active" onclick="setTF('1h', this)">1h</button>
     </div>
 
-    <div id="status">Iniciando scanner...</div>
+    <div id="status">Carregando scanner...</div>
     <div id="lista"></div>
+</div>
 
-    <script>
-        let categoriaAtual = 'crypto';
-        let tfAtual = '1h';
-        const urlServidor = 'https://meu-app-analise.onrender.com';
+<script>
+    let categoriaAtual = 'crypto';
+    let tfAtual = '1h';
+    const urlServidor = 'https://meu-app-analise.onrender.com';
 
-        async function carregarDados() {
-            const statusDiv = document.getElementById('status');
-            const listaDiv = document.getElementById('lista');
+    async function carregarDados() {
+        const statusDiv = document.getElementById('status');
+        const listaDiv = document.getElementById('lista');
+        
+        statusDiv.innerText = '🔄 Escaneando ativos...';
+        listaDiv.innerHTML = '';
+
+        try {
+            let resposta = await fetch(`${urlServidor}/api/scanner?categoria=${categoriaAtual}&timeframe=${tfAtual}`);
+            if (!resposta.ok) throw new Error('Erro no servidor');
             
-            statusDiv.innerText = '🔄 Buscando melhores oportunidades...';
-            listaDiv.innerHTML = '';
-
-            try {
-                let resposta = await fetch(`${urlServidor}/api/scanner?categoria=${categoriaAtual}&timeframe=${tfAtual}`);
-                if (!resposta.ok) throw new Error('Erro HTTP: ' + resposta.status);
-                
-                let dados = await resposta.json();
-                
-                if (dados.length === 0) {
-                    statusDiv.innerText = 'Nenhum ativo retornado.';
-                    return;
-                }
-
-                statusDiv.innerText = '';
-                listaDiv.innerHTML = dados.map(item => `
-                    <div class="card">
-                        <div>
-                            <strong>${item.symbol}</strong>
-                            <div style="font-size: 0.8rem; color: #9ca3af; margin-top: 4px;">Timeframe: ${tfAtual}</div>
-                        </div>
-                        <span class="score">${item.score}/100</span>
-                    </div>
-                `).join('');
-
-            } catch (erro) {
-                statusDiv.innerText = '❌ Erro ao conectar ao servidor. Verifique se o Render está ativo.';
-                console.error(erro);
+            let dados = await resposta.json();
+            
+            if (dados.length === 0) {
+                statusDiv.innerText = 'Nenhum ativo retornado.';
+                return;
             }
-        }
 
-        function setCat(cat, btn) {
-            categoriaAtual = cat;
-            document.querySelectorAll('.grid')[0].querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            carregarDados();
-        }
+            statusDiv.innerText = '';
+            listaDiv.innerHTML = dados.map(item => `
+                <div class="card">
+                    <div>
+                        <strong>${item.symbol}</strong>
+                        <div style="font-size: 0.75rem; color: #9ca3af; margin-top: 4px;">TF: ${tfAtual}</div>
+                    </div>
+                    <span class="score">${item.score}/100</span>
+                </div>
+            `).join('');
 
-        function setTF(tf, btn) {
-            tfAtual = tf;
-            document.querySelectorAll('.grid')[1].querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            carregarDados();
+        } catch (erro) {
+            statusDiv.innerText = '❌ Erro de conexão com o Render.';
+            console.error(erro);
         }
+    }
 
-        // Executa ao carregar a página
+    function setCat(cat, btn) {
+        categoriaAtual = cat;
+        document.querySelectorAll('.grid')[0].querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
         carregarDados();
-    </script>
+    }
+
+    function setTF(tf, btn) {
+        tfAtual = tf;
+        document.querySelectorAll('.grid')[1].querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        carregarDados();
+    }
+
+    carregarDados();
+</script>
 </body>
 </html>
