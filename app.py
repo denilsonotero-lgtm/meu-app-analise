@@ -8,7 +8,7 @@ from motor_inteligente import prever_com_historico
 app = Flask(__name__)
 CORS(app)
 
-# Listas expandidas com 10 ativos principais para cada categoria
+# Listas expandidas com os 10 principais ativos de cada categoria
 LISTAS = {
     'forex': ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'AUDUSD=X', 'USDCAD=X', 'USDCHF=X', 'NZDUSD=X', 'EURGBP=X', 'EURJPY=X', 'GBPJPY=X'],
     'crypto': ['BTC-USD', 'ETH-USD', 'SOL-USD', 'BNB-USD', 'XRP-USD', 'ADA-USD', 'DOGE-USD', 'AVAX-USD', 'DOT-USD', 'LINK-USD'],
@@ -88,12 +88,8 @@ def scanner():
     busca = request.args.get('busca', '').strip().upper()
     min_score = int(request.args.get('score_min', 0))
     
-    # Define os ativos a varrer
-    if busca:
-        ativos = [busca]
-    else:
-        ativos = LISTAS.get(cat, LISTAS['crypto'])
-        
+    # Se houver busca específica, foca nela; senão, pega os top 10 da categoria
+    ativos = [busca] if busca else LISTAS.get(cat, LISTAS['crypto'])
     resultados = []
     
     for s in ativos:
@@ -105,7 +101,6 @@ def scanner():
             analise = motor_de_confluencia(df, s)
             preco_atual = float(df['Close'].iloc[-1])
             
-            # Dados estruturados para alimentar os cards e a tela de Raio-X
             ativo_info = {
                 "symbol": s,
                 "price": round(preco_atual, 4),
@@ -116,7 +111,6 @@ def scanner():
                 "candle": analise["candle"],
                 "fib_relevante": analise["fib_relevante"],
                 "amostras_hist": analise["amostras_hist"],
-                # Alvos automáticos para o gerenciamento de risco do Raio-X
                 "entrada": round(preco_atual, 4),
                 "take_profit": round(preco_atual * 1.02, 4),
                 "stop_loss": round(preco_atual * 0.98, 4)
@@ -127,7 +121,7 @@ def scanner():
         except Exception as e:
             continue
             
-    # Ordena do maior score para o menor e pega os 10 melhores
+    # Ordena do maior score para o menor e retorna os 10 melhores
     resultados = sorted(resultados, key=lambda x: x['score'], reverse=True)
     return jsonify(resultados[:10])
 
