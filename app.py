@@ -1,5 +1,5 @@
 import yfinance as yf
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import pandas as pd
 import numpy as np
@@ -69,6 +69,10 @@ def motor_de_confluencia(df):
     score_final = int(min(99, max(10, score)))
     direcao = "COMPRA FORTE 🚀" if score_final >= 70 else ("VENDA FORTE 📉" if score_final <= 30 else "AGUARDAR / LATERAL ⚖️")
     return {"score": score_final, "rsi": round(float(rsi), 1), "tendencia": direcao, "candle": padrao_candle, "fib_relevante": round(float(fibs['fib_618']), 2)}
+
+@app.route('/')
+def home():
+    return render_template('index.html')
 
 @app.route('/api/scanner', methods=['GET'])
 def scanner():
