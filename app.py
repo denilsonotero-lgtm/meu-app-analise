@@ -34,11 +34,14 @@ def scanner():
             
             score = int(min(98, max(15, 100 - rsi))) if rsi > 0 else 50
             
-            # Aplica o filtro de score manual
             if score >= score_min:
                 resultados.append({
-                    "symbol": s, "score": score, "rsi": round(rsi, 1),
-                    "tp": round(close * 1.015, 4), "sl": round(close * 0.985, 4)
+                    "symbol": s, 
+                    "price": round(close, 4), 
+                    "score": score, 
+                    "rsi": round(rsi, 1),
+                    "tp": round(close * 1.015, 4), 
+                    "sl": round(close * 0.985, 4)
                 })
         except: continue
             
