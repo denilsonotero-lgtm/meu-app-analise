@@ -29,7 +29,7 @@
 <div class="container">
     <div class="header">
         <div class="title">QUANTIUM DOPM PRO</div>
-        <div class="live-badge">RAIO-X ⚡</div>
+        <div class="live-badge">RAIO-X ⚡ TURBO</div>
     </div>
     <div class="tabs">
         <button class="tab-btn" onclick="setCat('forex', this)">Forex</button>
@@ -49,17 +49,20 @@
 </div>
 <script>
     let cat = 'crypto', scoreMin = 0;
+
     function setCat(c, btn) {
         cat = c;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         scan();
     }
+
     function updateScore(val) {
         scoreMin = val;
         document.getElementById('scoreVal').innerText = val;
         scan();
     }
+
     async function scan() {
         const area = document.getElementById('cardsContainer');
         let busca = document.getElementById('searchInput').value.trim();
@@ -70,7 +73,12 @@
         } else if (cat === 'b3' && busca && !busca.includes('.')) {
             busca = busca.toUpperCase() + '.SA';
         }
-        area.innerHTML = '<div class="loading">Analisando confluências...</div>';
+        
+        // Exibe o loading apenas se não houver cards na tela para evitar piscar a cada atualização rápida
+        if (!area.innerHTML.includes('card')) {
+            area.innerHTML = '<div class="loading">Analisando confluências em tempo real...</div>';
+        }
+
         try {
             let res = await fetch(`https://meu-app-analise.onrender.com/api/scanner?categoria=${cat}&score_min=${scoreMin}&busca=${encodeURIComponent(busca)}`);
             let data = await res.json();
@@ -89,18 +97,27 @@
                         <span style="color: #c084fc;">RSI: <b>${i.rsi}</b></span>
                     </div>
                     <div style="font-size: 0.8rem; color: #c084fc; margin-bottom: 6px;">
-                        Tendência: <b>${i.trend}</b>
+                        Tendência: <b>${i.tendencia || i.trend}</b>
                     </div>
                     <div style="font-size: 0.75rem; color: #9ca3af; display: flex; justify-content: space-between; border-top: 1px solid #1f1f2e; padding-top: 6px;">
                         <span>Candle: ${i.candle}</span>
-                        <span>Fib: ${i.fib}</span>
+                        <span>Fib: ${i.fib_relevante || i.fib}</span>
                     </div>
                 </div>`).join('');
         } catch(e) {
             area.innerHTML = '<p style="text-align:center; color:#ef4444; padding:20px;">Erro de conexão com o servidor.</p>';
         }
     }
+
+    // Carga inicial imediata ao abrir a página
     scan();
+
+    // Loop de atualização rápida a cada 5 segundos (com trava inteligente para não apagar digitação)
+    setInterval(() => {
+        if (document.activeElement.id !== 'searchInput') {
+            scan();
+        }
+    }, 5000);
 </script>
 </body>
 </html>
