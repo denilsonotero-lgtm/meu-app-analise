@@ -4,3 +4,5 @@ gunicorn
 requests
 yfinance
 pandas
+numpy
+scikit-learn
